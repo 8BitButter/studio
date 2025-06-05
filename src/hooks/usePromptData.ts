@@ -4,6 +4,8 @@ import type { AppConfiguration, DocumentType, PrimaryGoal, PromptFormData, Docum
 import { initialAppConfig } from '@/lib/config';
 import { generatePrompt } from '@/lib/prompt-generator';
 import { suggestNextOptions as fetchAiSuggestions } from '@/ai/flows/context-aware-prompting';
+import { refineCustomInstructionsFlow } from '@/ai/flows/refine-custom-instructions-flow';
+import { engineerFinalPromptFlow } from '@/ai/flows/engineer-final-prompt-flow';
 import { useToast } from '@/hooks/use-toast';
 
 const LOCAL_STORAGE_KEY = 'promptPilotUserConfig';
@@ -20,7 +22,11 @@ const defaultFormData: PromptFormData = {
 export function usePromptData() {
   const [appConfig, setAppConfig] = useState<AppConfiguration>(initialAppConfig);
   const [formData, setFormData] = useState<PromptFormData>(defaultFormData);
-  const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
+  
+  const [aiEngineeredPrompt, setAiEngineeredPrompt] = useState<string>('');
+  const [isLoadingRefinement, setIsLoadingRefinement] = useState<boolean>(false);
+  const [isLoadingEngineering, setIsLoadingEngineering] = useState<boolean>(false);
+
   const [availablePrimaryGoals, setAvailablePrimaryGoals] = useState<PrimaryGoal[]>([]);
   const [availableDetails, setAvailableDetails] = useState<DocumentField[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
@@ -28,7 +34,6 @@ export function usePromptData() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load user-defined document types from localStorage
     try {
       const storedUserConfigRaw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (storedUserConfigRaw) {
@@ -58,9 +63,8 @@ export function usePromptData() {
       const selectedDoc = appConfig.documentTypes.find(dt => dt.id === formData.documentType);
       setAvailablePrimaryGoals(selectedDoc?.primaryGoals || []);
       if (selectedDoc && (!formData.primaryGoal || !selectedDoc.primaryGoals.find(pg => pg.id === formData.primaryGoal))) {
-         updateFormData('primaryGoal', ''); // Reset if current goal not in new type
+         updateFormData('primaryGoal', ''); 
       }
-      // Reset details when document type changes
       updateFormData('selectedDetails', []);
       updateFormData('customDetails', []);
     } else {
@@ -74,20 +78,11 @@ export function usePromptData() {
       const selectedDoc = appConfig.documentTypes.find(dt => dt.id === formData.documentType);
       const selectedGoal = selectedDoc?.primaryGoals.find(pg => pg.id === formData.primaryGoal);
       setAvailableDetails(selectedGoal?.suggestedDetails || []);
-      // Reset selected details if they are not part of the new goal's suggestions (optional, could also merge)
-      // updateFormData('selectedDetails', []); 
     } else {
       setAvailableDetails([]);
     }
   }, [formData.primaryGoal, formData.documentType, appConfig.documentTypes, updateFormData]);
 
-
-  // Generate prompt whenever formData changes
-  useEffect(() => {
-    setGeneratedPrompt(generatePrompt(formData, appConfig));
-  }, [formData, appConfig]);
-
-  // Fetch AI suggestions
   useEffect(() => {
     if (formData.documentType) {
       setIsLoadingAiSuggestions(true);
@@ -112,6 +107,51 @@ export function usePromptData() {
   }, [formData.documentType, formData.primaryGoal, formData.selectedDetails, formData.customDetails, appConfig.documentTypes, availablePrimaryGoals, toast]);
 
 
+  const triggerPromptEngineeringProcess = useCallback(async () => {
+    if (!formData.documentType || !formData.outputFormat) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a Document Type and Output Format before generating.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoadingRefinement(true);
+    setIsLoadingEngineering(true);
+    setAiEngineeredPrompt(''); // Clear previous prompt
+
+    let instructionsForBasePrompt = formData.customInstructions;
+
+    try {
+      if (formData.customInstructions && formData.customInstructions.trim() !== '') {
+        const refinedResult = await refineCustomInstructionsFlow({ originalInstructions: formData.customInstructions });
+        instructionsForBasePrompt = refinedResult.refinedInstructions;
+        toast({ title: "Custom Instructions Refined", description: "AI has enhanced your custom instructions." });
+      }
+    } catch (error) {
+      console.error("Error refining custom instructions:", error);
+      toast({ title: "Refinement Error", description: "Could not refine custom instructions. Using original.", variant: "destructive" });
+      // Proceed with original custom instructions
+    } finally {
+      setIsLoadingRefinement(false);
+    }
+    
+    const basePrompt = generatePrompt(formData, appConfig, instructionsForBasePrompt);
+
+    try {
+      const finalEngineeredResult = await engineerFinalPromptFlow({ rawPrompt: basePrompt });
+      setAiEngineeredPrompt(finalEngineeredResult.engineeredPrompt);
+      toast({ title: "Prompt Engineered!", description: "AI has generated an optimized prompt." });
+    } catch (error) {
+      console.error("Error engineering final prompt:", error);
+      toast({ title: "Engineering Error", description: "Could not engineer the final prompt.", variant: "destructive" });
+      setAiEngineeredPrompt("Error generating engineered prompt. Please try again."); // Show error in display
+    } finally {
+      setIsLoadingEngineering(false);
+    }
+  }, [formData, appConfig, toast]);
+
   const handleDetailToggle = (detailLabel: string) => {
     const currentIndex = formData.selectedDetails.indexOf(detailLabel);
     const newSelectedDetails = [...formData.selectedDetails];
@@ -135,12 +175,11 @@ export function usePromptData() {
   
   const addAiSuggestionToDetails = (suggestion: string) => {
     if (!formData.selectedDetails.includes(suggestion) && !formData.customDetails.includes(suggestion)) {
-        // Check if it's a known suggested detail for the current goal
         const isKnownSuggestedDetail = availableDetails.some(d => d.label === suggestion);
         if (isKnownSuggestedDetail) {
-            handleDetailToggle(suggestion); // Add to selectedDetails
+            handleDetailToggle(suggestion); 
         } else {
-            addCustomDetail(suggestion); // Add to customDetails
+            addCustomDetail(suggestion); 
         }
         toast({ title: "Suggestion Added", description: `"${suggestion}" added to details.` });
     } else {
@@ -148,16 +187,22 @@ export function usePromptData() {
     }
   };
 
-
   const resetForm = () => {
     setFormData(defaultFormData);
     setAiSuggestions([]);
+    setAiEngineeredPrompt('');
+    setIsLoadingRefinement(false);
+    setIsLoadingEngineering(false);
     toast({ title: "Form Reset", description: "All selections have been cleared." });
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedPrompt)
-      .then(() => toast({ title: "Prompt Copied!", description: "The generated prompt has been copied to your clipboard." }))
+    if (!aiEngineeredPrompt) {
+      toast({ title: "Nothing to Copy", description: "Please generate a prompt first.", variant: "default" });
+      return;
+    }
+    navigator.clipboard.writeText(aiEngineeredPrompt)
+      .then(() => toast({ title: "Prompt Copied!", description: "The engineered prompt has been copied to your clipboard." }))
       .catch(err => {
         console.error("Failed to copy: ", err);
         toast({ title: "Copy Failed", description: "Could not copy prompt to clipboard.", variant: "destructive" });
@@ -170,7 +215,6 @@ export function usePromptData() {
       ...prevConfig,
       documentTypes: updatedDocTypes,
     }));
-    // Save only user-defined types to localStorage
     const userDefinedTypes = updatedDocTypes.filter(dt => dt.isUserDefined);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userDefinedTypes));
@@ -185,7 +229,10 @@ export function usePromptData() {
     appConfig,
     formData,
     updateFormData,
-    generatedPrompt,
+    aiEngineeredPrompt,
+    isLoadingRefinement,
+    isLoadingEngineering,
+    triggerPromptEngineeringProcess,
     availablePrimaryGoals,
     availableDetails,
     handleDetailToggle,

@@ -2,18 +2,19 @@
 import React, { useState } from 'react';
 import { Header } from '@/components/prompt-pilot/Header';
 import { PromptConstructorForm } from '@/components/prompt-pilot/PromptConstructorForm';
-import { LivePromptPreview } from '@/components/prompt-pilot/LivePromptPreview';
+import { EngineeredPromptDisplay } from '@/components/prompt-pilot/EngineeredPromptDisplay';
 import { FeatureCreatorForm } from '@/components/prompt-pilot/FeatureCreatorForm';
 import { usePromptData } from '@/hooks/usePromptData';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Terminal } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from '@/components/ui/button';
 
 export default function PromptPilotPage() {
   const {
     appConfig,
     formData,
     updateFormData,
-    generatedPrompt,
+    aiEngineeredPrompt,
     availablePrimaryGoals,
     availableDetails,
     handleDetailToggle,
@@ -25,6 +26,9 @@ export default function PromptPilotPage() {
     resetForm,
     copyToClipboard,
     addNewDocumentType,
+    triggerPromptEngineeringProcess,
+    isLoadingRefinement,
+    isLoadingEngineering,
   } = usePromptData();
 
   const [isFeatureCreatorOpen, setFeatureCreatorOpen] = useState(false);
@@ -32,9 +36,9 @@ export default function PromptPilotPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header appName="PromptPilot" />
-      <main className="flex-grow container mx-auto p-6 md:p-8 lg:p-10"> {/* Increased padding */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start"> {/* Increased gap */}
-          <section id="prompt-constructor" className="space-y-8"> {/* Increased space-y */}
+      <main className="flex-grow container mx-auto p-6 md:p-8 lg:p-10">
+        <div className="flex flex-col gap-8 lg:gap-12 items-stretch"> {/* Changed to single column, items-stretch */}
+          <section id="prompt-constructor" className="space-y-8">
             <PromptConstructorForm
               config={appConfig}
               formData={formData}
@@ -50,7 +54,7 @@ export default function PromptPilotPage() {
               onReset={resetForm}
               onFeatureCreatorOpen={() => setFeatureCreatorOpen(true)}
             />
-             <Alert variant="default" className="bg-accent/10 border-accent/30 text-accent-foreground">
+            <Alert variant="default" className="bg-accent/10 border-accent/30 text-accent-foreground">
               <AlertCircle className="h-4 w-4 text-accent" />
               <AlertTitle className="font-headline text-accent">Pro Tip!</AlertTitle>
               <AlertDescription className="text-foreground/80">
@@ -58,14 +62,25 @@ export default function PromptPilotPage() {
                 Your creations are saved locally in your browser.
               </AlertDescription>
             </Alert>
+             <Button 
+              onClick={triggerPromptEngineeringProcess} 
+              disabled={isLoadingRefinement || isLoadingEngineering}
+              className="w-full py-3 text-base"
+            >
+              <Terminal className="mr-2 h-5 w-5" />
+              {isLoadingRefinement || isLoadingEngineering ? 'Engineering Prompt...' : 'Generate Engineered Prompt'}
+            </Button>
           </section>
 
-          <section id="prompt-preview" className="lg:sticky lg:top-28"> {/* Adjusted sticky top due to larger header */}
-            <LivePromptPreview
-              generatedPrompt={generatedPrompt}
-              onCopy={copyToClipboard}
-            />
-          </section>
+          {(aiEngineeredPrompt || isLoadingRefinement || isLoadingEngineering) && (
+            <section id="engineered-prompt-display">
+              <EngineeredPromptDisplay
+                engineeredPrompt={aiEngineeredPrompt}
+                onCopy={copyToClipboard}
+                isLoading={isLoadingRefinement || isLoadingEngineering}
+              />
+            </section>
+          )}
         </div>
       </main>
 
@@ -75,7 +90,7 @@ export default function PromptPilotPage() {
         onSave={addNewDocumentType}
       />
       
-      <footer className="py-8 text-center text-sm text-muted-foreground border-t mt-auto"> {/* Increased padding */}
+      <footer className="py-8 text-center text-sm text-muted-foreground border-t mt-auto">
         © {new Date().getFullYear()} PromptPilot. Empowering your LLM interactions.
       </footer>
     </div>

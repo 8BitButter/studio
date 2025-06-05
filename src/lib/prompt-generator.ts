@@ -1,11 +1,17 @@
-import type { PromptFormData, DocumentType, PrimaryGoal, OutputFormat, AppConfiguration } from './types';
+import type { PromptFormData, AppConfiguration } from './types';
 
-export function generatePrompt(formData: PromptFormData, config: AppConfiguration): string {
-  const { documentType, primaryGoal, selectedDetails, customDetails, outputFormat, customInstructions } = formData;
+export function generatePrompt(
+  formData: PromptFormData,
+  config: AppConfiguration,
+  customInstructionsOverride?: string
+): string {
+  const { documentType, primaryGoal, selectedDetails, customDetails, outputFormat } = formData;
 
   const docTypeLabel = config.documentTypes.find(dt => dt.id === documentType)?.label || documentType;
   const goalLabel = config.documentTypes.find(dt => dt.id === documentType)?.primaryGoals.find(pg => pg.id === primaryGoal)?.label || primaryGoal;
   const outputFormatLabel = config.outputFormats.find(of => of.id === outputFormat)?.label || outputFormat;
+
+  const instructionsToUse = customInstructionsOverride !== undefined ? customInstructionsOverride : formData.customInstructions;
 
   let prompt = `You are an expert AI assistant tasked with processing a document. Your goal is to meticulously extract information and present it in a specific format.
 
@@ -25,8 +31,8 @@ Primary Goal: ${goalLabel}
 
   prompt += `\nOutput Format Preference: ${outputFormatLabel}\n`;
 
-  if (customInstructions) {
-    prompt += `\nSpecial Instructions or Clarifications:\n${customInstructions}\n`;
+  if (instructionsToUse) {
+    prompt += `\nSpecial Instructions or Clarifications:\n${instructionsToUse}\n`;
   }
 
   prompt += `\nPlease analyze the document content provided below and fulfill the request.
