@@ -18,7 +18,7 @@ export function LivePromptPreview({ generatedPrompt, onCopy }: LivePromptPreview
         <CardDescription>Your generated prompt will appear here in real-time.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ScrollArea className="h-[30rem] rounded-md border bg-muted/30">
+        <ScrollArea className="h-[35rem] rounded-md border bg-muted/30">
           <Textarea
             value={generatedPrompt}
             readOnly
