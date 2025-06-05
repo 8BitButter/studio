@@ -12,17 +12,17 @@ interface LivePromptPreviewProps {
 
 export function LivePromptPreview({ generatedPrompt, onCopy }: LivePromptPreviewProps) {
   return (
-    <Card className="shadow-lg sticky top-24"> {/* sticky top to keep it in view on scroll */}
-      <CardHeader>
+    <Card className="shadow-lg sticky top-28"> {/* Adjusted sticky top due to larger header */}
+      <CardHeader className="pb-4"> {/* Added padding bottom to header */}
         <CardTitle className="font-headline text-xl md:text-2xl">Live Prompt Preview</CardTitle>
         <CardDescription>Your generated prompt will appear here in real-time.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <ScrollArea className="h-[35rem] rounded-md border bg-muted/30">
+      <CardContent className="space-y-4 pt-2"> {/* Adjusted padding top */}
+        <ScrollArea className="h-[35rem] rounded-md border bg-muted/20"> {/* Slightly less opaque bg */}
           <Textarea
             value={generatedPrompt}
             readOnly
-            className="h-full w-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-4 text-sm leading-relaxed"
+            className="h-full w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-4 text-sm leading-relaxed"
             aria-label="Generated Prompt"
             placeholder="Your prompt will be constructed here..."
           />
