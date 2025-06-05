@@ -1,5 +1,6 @@
+
 "use client";
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { AppConfiguration, DocumentType, PrimaryGoal, PromptFormData, DocumentField } from '@/lib/types';
 import { initialAppConfig } from '@/lib/config';
 import { generatePrompt } from '@/lib/prompt-generator';
@@ -65,8 +66,10 @@ export function usePromptData() {
       if (selectedDoc && (!formData.primaryGoal || !selectedDoc.primaryGoals.find(pg => pg.id === formData.primaryGoal))) {
          updateFormData('primaryGoal', ''); 
       }
-      updateFormData('selectedDetails', []);
-      updateFormData('customDetails', []);
+      // Do not reset selectedDetails and customDetails here if we want them to persist across doc type changes
+      // or be more selective about when they are reset.
+      // updateFormData('selectedDetails', []); // Consider if this is always desired
+      // updateFormData('customDetails', []);  // Consider if this is always desired
     } else {
       setAvailablePrimaryGoals([]);
       updateFormData('primaryGoal', '');
@@ -78,10 +81,16 @@ export function usePromptData() {
       const selectedDoc = appConfig.documentTypes.find(dt => dt.id === formData.documentType);
       const selectedGoal = selectedDoc?.primaryGoals.find(pg => pg.id === formData.primaryGoal);
       setAvailableDetails(selectedGoal?.suggestedDetails || []);
+      // When primary goal changes, it's often good to clear existing selected details
+      // that might not be relevant to the new goal.
+      // updateFormData('selectedDetails', []); // Consider if this is desired
     } else {
       setAvailableDetails([]);
     }
   }, [formData.primaryGoal, formData.documentType, appConfig.documentTypes, updateFormData]);
+
+  const serializedSelectedDetails = useMemo(() => JSON.stringify(formData.selectedDetails), [formData.selectedDetails]);
+  const serializedCustomDetails = useMemo(() => JSON.stringify(formData.customDetails), [formData.customDetails]);
 
   useEffect(() => {
     if (formData.documentType) {
@@ -92,7 +101,8 @@ export function usePromptData() {
       fetchAiSuggestions({
         documentType: docTypeLabel,
         primaryGoal: goalLabel,
-        selectedDetails: [...formData.selectedDetails, ...formData.customDetails],
+        selectedDetails: formData.selectedDetails, // Use the actual array for the API call
+        customDetails: formData.customDetails,   // Use the actual array for the API call
       })
         .then(response => setAiSuggestions(response.suggestedOptions || []))
         .catch(error => {
@@ -104,7 +114,15 @@ export function usePromptData() {
     } else {
       setAiSuggestions([]);
     }
-  }, [formData.documentType, formData.primaryGoal, formData.selectedDetails, formData.customDetails, appConfig.documentTypes, availablePrimaryGoals, toast]);
+  }, [
+      formData.documentType,
+      formData.primaryGoal,
+      serializedSelectedDetails, // Use serialized version for dependency
+      serializedCustomDetails,  // Use serialized version for dependency
+      appConfig.documentTypes, 
+      availablePrimaryGoals, 
+      toast
+    ]);
 
 
   const triggerPromptEngineeringProcess = useCallback(async () => {
@@ -119,7 +137,7 @@ export function usePromptData() {
 
     setIsLoadingRefinement(true);
     setIsLoadingEngineering(true);
-    setAiEngineeredPrompt(''); // Clear previous prompt
+    setAiEngineeredPrompt(''); 
 
     let instructionsForBasePrompt = formData.customInstructions;
 
@@ -132,7 +150,6 @@ export function usePromptData() {
     } catch (error) {
       console.error("Error refining custom instructions:", error);
       toast({ title: "Refinement Error", description: "Could not refine custom instructions. Using original.", variant: "destructive" });
-      // Proceed with original custom instructions
     } finally {
       setIsLoadingRefinement(false);
     }
@@ -146,7 +163,7 @@ export function usePromptData() {
     } catch (error) {
       console.error("Error engineering final prompt:", error);
       toast({ title: "Engineering Error", description: "Could not engineer the final prompt.", variant: "destructive" });
-      setAiEngineeredPrompt("Error generating engineered prompt. Please try again."); // Show error in display
+      setAiEngineeredPrompt("Error generating engineered prompt. Please try again.");
     } finally {
       setIsLoadingEngineering(false);
     }
