@@ -24,12 +24,12 @@ export function generatePrompt(
   let prompt = ``;
 
   if (requestDownloadableFileContent) {
-    prompt = `Your SOLE TASK for this request is to PROVIDE THE CONTENT FOR A DOWNLOADABLE ${outputFormatLabel.toUpperCase()} FILE.
-ABSOLUTELY EVERYTHING in your response MUST BE the file content itself.
-Do NOT include any other text: no explanations, no apologies, no summaries, no conversational remarks, nothing before or after the file content.
-The user will take your entire output and save it directly as a .${fileExtension} file.
+    prompt = `YOUR PRIMARY MISSION: Generate and provide the complete, raw content for a downloadable ${outputFormatLabel.toUpperCase()} file.
+This is your ONLY output.
+The user will save your entire response directly as a .${fileExtension} file.
+DO NOT include ANY other text: no introductions, no explanations, no summaries, no apologies, no conversational remarks.
 
-The file content should be based on extracting data from a "${docTypeLabel}" document with the core objective of "${goalLabel}".
+The downloadable file content should be based on extracting data from a "${docTypeLabel}" document with the core objective of "${goalLabel}".
 All necessary context for generating this file content is assumed to be embedded within these instructions or known by you for the specified document type and objective.
 
 ### Specifications for the Downloadable File Content:
@@ -99,9 +99,9 @@ All necessary context for generating this file content is assumed to be embedded
       prompt += `    Follow these additional instructions carefully when generating the file content:\n    ${instructionsToUse.replace(/\n/g, '\n    ')}\n`; // Indent user instructions
     }
 
-    prompt += `\n### Final Instructions for Downloadable File Content Generation:\n`;
+    prompt += `\n### Final Command for Downloadable File Content Generation:\n`;
     prompt += `Ensure all above specifications (1-6) are met.
-Remember: Your entire output must be the file content itself. Do not add any surrounding text or explanations.`;
+Remember: Your entire output must be the raw file content itself. No other text.`;
 
   } else {
     // Standard prompt generation (not for direct file content)

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent that engineers a raw prompt into an optimized final prompt.
@@ -26,8 +27,11 @@ export async function engineerFinalPromptFlow(input: EngineerFinalPromptInput): 
     input: {schema: EngineerFinalPromptInputSchema},
     output: {schema: EngineerFinalPromptOutputSchema},
     prompt: `You are an AI assistant that optimizes prompts for other LLMs.
-Given the 'raw prompt' below, which is already structured for an LLM, analyze it and re-engineer it for maximum clarity, effectiveness, and to elicit the best possible response.
-You can restructure, rephrase, add or remove elements as long as the core request defined by 'Document Type', 'Primary Goal', and 'Details to Extract' (if present in the raw prompt) is preserved.
+Given the 'raw prompt' below, analyze it and re-engineer it for maximum clarity, effectiveness, and to elicit the best possible response.
+
+**CRITICAL INSTRUCTION: If the Raw Prompt explicitly states that the goal is to 'generate downloadable file content', 'provide content for a downloadable file', or that the 'entire output must be the file content itself', your engineered prompt MUST preserve and EMPHASIZE this directive. The primary task in the engineered prompt should be unmistakably about generating or providing a downloadable file or its complete content. For example, the engineered prompt could start with a very direct command like "Your primary mission: Generate and provide the complete, raw content for a downloadable [FORMAT] file."**
+
+You can restructure, rephrase, or add other elements as long as the core request defined by 'Document Type', 'Primary Goal', and 'Details to Extract' (if present in the raw prompt) is also preserved.
 Ensure the final output is a ready-to-use prompt and strictly adheres to the JSON schema for engineeredPrompt.
 
 Raw Prompt:
@@ -49,3 +53,4 @@ Raw Prompt:
   }
   return output;
 }
+
