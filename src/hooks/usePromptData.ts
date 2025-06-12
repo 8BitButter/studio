@@ -1,13 +1,13 @@
 
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { AppConfiguration, DocumentType, PromptFormData, DocumentField, ExecutePromptInput } from '@/lib/types';
+import type { AppConfiguration, DocumentType, PromptFormData } from '@/lib/types'; // ExecutePromptInput removed
 import { initialAppConfig } from '@/lib/config';
 import { generatePrompt } from '@/lib/prompt-generator';
 import { suggestNextOptions as fetchAiSuggestions } from '@/ai/flows/context-aware-prompting';
 import { refineCustomInstructionsFlow } from '@/ai/flows/refine-custom-instructions-flow';
 import { engineerFinalPromptFlow } from '@/ai/flows/engineer-final-prompt-flow';
-import { executePromptWithDocument as executePromptFlow } from '@/ai/flows/execute-prompt-flow';
+// executePromptFlow import removed
 import { useToast } from '@/hooks/use-toast';
 
 const LOCAL_STORAGE_KEY = 'promptPilotUserConfig';
@@ -18,7 +18,7 @@ const defaultFormData: Omit<PromptFormData, 'primaryGoal'> & { primaryGoal?: str
   customDetails: [],
   outputFormat: '',
   customInstructions: '',
-  requestDownloadableFileContent: false, // Initialized
+  requestDownloadableFileContent: false,
 };
 
 export function usePromptData() {
@@ -29,9 +29,9 @@ export function usePromptData() {
   const [isLoadingRefinement, setIsLoadingRefinement] = useState<boolean>(false);
   const [isLoadingEngineering, setIsLoadingEngineering] = useState<boolean>(false);
 
-  // const [documentContent, setDocumentContent] = useState<string>(''); // No longer used from UI
-  const [llmResponseText, setLlmResponseText] = useState<string>(''); 
-  const [isLoadingLlmResponse, setIsLoadingLlmResponse] = useState<boolean>(false); 
+  // Removed llmResponseText and isLoadingLlmResponse states
+  // const [llmResponseText, setLlmResponseText] = useState<string>(''); 
+  // const [isLoadingLlmResponse, setIsLoadingLlmResponse] = useState<boolean>(false); 
 
   const [availableDetails, setAvailableDetails] = useState<DocumentField[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
@@ -112,27 +112,8 @@ export function usePromptData() {
       formData.customDetails   
     ]);
 
-  const executeEngineeredPromptForFileContent = useCallback(async (promptToExecute: string) => {
-    setIsLoadingLlmResponse(true);
-    setLlmResponseText('');
-
-    try {
-      const executionInput: ExecutePromptInput = {
-        engineeredPrompt: promptToExecute,
-      };
-      const result = await executePromptFlow(executionInput);
-      setLlmResponseText(result.llmResponseText);
-      toast({ title: "File Content Generated", description: "The LLM has provided the file content. You can download it below." });
-    } catch (error) {
-      console.error("Error executing prompt for file content:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast({ title: "LLM Execution Error", description: `Could not get file content from LLM: ${errorMessage}`, variant: "destructive" });
-      setLlmResponseText(`Error getting file content: ${errorMessage}`);
-    } finally {
-      setIsLoadingLlmResponse(false);
-    }
-  }, [toast]);
-
+  // executeEngineeredPromptForFileContent (and thus triggerLlmExecution) removed from frontend execution path.
+  // The app will now only engineer the prompt.
 
   const triggerPromptEngineeringProcess = useCallback(async () => {
     if (!formData.documentType || !formData.outputFormat) {
@@ -147,7 +128,7 @@ export function usePromptData() {
     setIsLoadingRefinement(true);
     setIsLoadingEngineering(true);
     setAiEngineeredPrompt(''); 
-    setLlmResponseText(''); 
+    // setLlmResponseText(''); // Removed
 
     let instructionsForBasePrompt = formData.customInstructions;
 
@@ -164,36 +145,22 @@ export function usePromptData() {
       setIsLoadingRefinement(false);
     }
     
-    // Pass the full formData including requestDownloadableFileContent
     const basePrompt = generatePrompt(formData, appConfig, instructionsForBasePrompt);
 
     try {
       const finalEngineeredResult = await engineerFinalPromptFlow({ rawPrompt: basePrompt });
       setAiEngineeredPrompt(finalEngineeredResult.engineeredPrompt);
-
-      if (formData.requestDownloadableFileContent) {
-        toast({ title: "Prompt Engineered!", description: "Now attempting to generate file content..." });
-        await executeEngineeredPromptForFileContent(finalEngineeredResult.engineeredPrompt);
-      } else {
-        toast({ title: "Prompt Engineered!", description: "AI has generated an optimized prompt." });
-      }
-
+      toast({ title: "Prompt Engineered!", description: "AI has generated an optimized prompt." });
+      // Removed automatic call to executeEngineeredPromptForFileContent
     } catch (error) {
       console.error("Error engineering final prompt:", error);
       toast({ title: "Engineering Error", description: "Could not engineer the final prompt.", variant: "destructive" });
       setAiEngineeredPrompt("Error generating engineered prompt. Please try again.");
-       if (formData.requestDownloadableFileContent) { // Ensure loading state is reset if engineering fails before execution
-            setIsLoadingLlmResponse(false);
-       }
     } finally {
       setIsLoadingEngineering(false);
-      // setIsLoadingLlmResponse is handled by executeEngineeredPromptForFileContent
     }
-  }, [formData, appConfig, toast, executeEngineeredPromptForFileContent]);
+  }, [formData, appConfig, toast]);
   
-  // This function is no longer called directly from UI, but by triggerPromptEngineeringProcess
-  const triggerLlmExecution = executeEngineeredPromptForFileContent;
-
 
   const handleDetailToggle = (detailLabel: string) => {
     const currentIndex = formData.selectedDetails.indexOf(detailLabel);
@@ -234,24 +201,23 @@ export function usePromptData() {
     setFormData(defaultFormData as Omit<PromptFormData, 'primaryGoal'>);
     setAiSuggestions([]);
     setAiEngineeredPrompt('');
-    // setDocumentContent(''); // No longer used from UI
-    setLlmResponseText('');
+    // setLlmResponseText(''); // Removed
     setIsLoadingRefinement(false);
     setIsLoadingEngineering(false);
-    setIsLoadingLlmResponse(false);
+    // setIsLoadingLlmResponse(false); // Removed
     toast({ title: "Form Reset", description: "All selections have been cleared." });
   };
 
-  const copyToClipboard = (textToCopy: string, type: 'Prompt' | 'Response') => {
+  const copyToClipboard = (textToCopy: string) => { // Type 'Response' removed
     if (!textToCopy) {
-      toast({ title: "Nothing to Copy", description: `Please generate a ${type.toLowerCase()} first.`, variant: "default" });
+      toast({ title: "Nothing to Copy", description: `Please generate a prompt first.`, variant: "default" });
       return;
     }
     navigator.clipboard.writeText(textToCopy)
-      .then(() => toast({ title: `${type} Copied!`, description: `The ${type.toLowerCase()} has been copied to your clipboard.` }))
+      .then(() => toast({ title: `Prompt Copied!`, description: `The prompt has been copied to your clipboard.` }))
       .catch(err => {
-        console.error(`Failed to copy ${type}: `, err);
-        toast({ title: "Copy Failed", description: `Could not copy ${type.toLowerCase()} to clipboard.`, variant: "destructive" });
+        console.error(`Failed to copy prompt: `, err);
+        toast({ title: "Copy Failed", description: `Could not copy prompt to clipboard.`, variant: "destructive" });
       });
   };
 
@@ -318,10 +284,8 @@ export function usePromptData() {
     copyToClipboard,
     addNewDocumentType,
     deleteUserDefinedDocumentType,
-    // documentContent, // No longer exposed as it's not managed via UI state
-    // setDocumentContent, // No longer exposed
-    llmResponseText,
-    isLoadingLlmResponse,
-    triggerLlmExecution, // This now refers to executeEngineeredPromptForFileContent
+    // llmResponseText, // Removed from return
+    // isLoadingLlmResponse, // Removed from return
+    // triggerLlmExecution, // Removed from return
   };
 }

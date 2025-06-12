@@ -3,17 +3,16 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ClipboardCopy, Loader2, Wand2 } from 'lucide-react'; // Removed Download icon
+import { ClipboardCopy, Loader2, Wand2 } from 'lucide-react';
 
 interface EngineeredPromptDisplayProps {
   engineeredPrompt: string;
   onCopy: () => void;
   isLoading: boolean;
+  requestDownloadableFileContent?: boolean; // Added to adjust description
 }
 
-export function EngineeredPromptDisplay({ engineeredPrompt, onCopy, isLoading }: EngineeredPromptDisplayProps) {
-  // Download prompt function removed
-
+export function EngineeredPromptDisplay({ engineeredPrompt, onCopy, isLoading, requestDownloadableFileContent }: EngineeredPromptDisplayProps) {
   return (
     <Card className="shadow-lg">
       <CardHeader className="pb-4">
@@ -23,8 +22,9 @@ export function EngineeredPromptDisplay({ engineeredPrompt, onCopy, isLoading }:
         </div>
         <CardDescription>
           This is the AI-optimized version of your prompt. 
-          {/* Adjusted description */}
-          If "Generate downloadable file content" was selected, this prompt was used to request the file content from the LLM. Otherwise, you can use this prompt with an LLM and your document.
+          {requestDownloadableFileContent 
+            ? " It has been engineered to request downloadable file content from an LLM. Copy this prompt and use it with your preferred LLM."
+            : " You can use this prompt with an LLM and your document."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-2">
@@ -52,7 +52,6 @@ export function EngineeredPromptDisplay({ engineeredPrompt, onCopy, isLoading }:
           >
             <ClipboardCopy className="mr-2 h-4 w-4" /> Copy Engineered Prompt
           </Button>
-          {/* Download This Prompt button removed */}
         </div>
       </CardContent>
     </Card>

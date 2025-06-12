@@ -4,15 +4,12 @@ import React, { useState } from 'react';
 import { Header } from '@/components/prompt-pilot/Header';
 import { PromptConstructorForm } from '@/components/prompt-pilot/PromptConstructorForm';
 import { EngineeredPromptDisplay } from '@/components/prompt-pilot/EngineeredPromptDisplay';
-import { LlmResponseDisplay } from '@/components/prompt-pilot/LlmResponseDisplay';
+// LlmResponseDisplay removed
 import { FeatureCreatorForm } from '@/components/prompt-pilot/FeatureCreatorForm';
 import { usePromptData } from '@/hooks/usePromptData';
-import { AlertCircle, Terminal } from 'lucide-react'; // Removed FileText, Send
+import { AlertCircle, Terminal } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from '@/components/ui/button';
-// import { Textarea } from '@/components/ui/textarea'; // No longer needed
-// import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'; // No longer needed for document input
-// import { Label } from '@/components/ui/label'; // No longer needed for document input
 
 export default function PromptPilotPage() {
   const {
@@ -36,18 +33,15 @@ export default function PromptPilotPage() {
     isLoadingEngineering,
     // documentContent, // Removed
     // setDocumentContent, // Removed
-    llmResponseText, 
-    isLoadingLlmResponse, 
-    // triggerLlmExecution, // No longer called directly from UI
+    // llmResponseText, // Removed
+    // isLoadingLlmResponse, // Removed
+    // triggerLlmExecution, // Removed
   } = usePromptData();
 
   const [isFeatureCreatorOpen, setFeatureCreatorOpen] = useState(false);
 
-  const isGeneratingContent = formData.requestDownloadableFileContent && (isLoadingEngineering || isLoadingLlmResponse);
   const generateButtonText = () => {
     if (isLoadingRefinement || isLoadingEngineering) return 'Engineering Prompt...';
-    if (isLoadingLlmResponse && formData.requestDownloadableFileContent) return 'Generating File Content...';
-    if (formData.requestDownloadableFileContent) return 'Generate Engineered Prompt & File Content';
     return 'Generate Engineered Prompt';
   }
 
@@ -77,12 +71,12 @@ export default function PromptPilotPage() {
               <AlertCircle className="h-4 w-4 text-accent" />
               <AlertTitle className="font-headline text-accent">Pro Tip!</AlertTitle>
               <AlertDescription className="text-foreground/80">
-                Use "Create New Document Type" to save custom workflows. If "Generate downloadable file content" is checked, provide all necessary context for file generation in the custom instructions.
+                Use "Create New Document Type" to save custom workflows. If "Generate downloadable file content" is checked, the engineered prompt will be tailored to request file content from an LLM.
               </AlertDescription>
             </Alert>
              <Button 
               onClick={triggerPromptEngineeringProcess} 
-              disabled={isLoadingRefinement || isLoadingEngineering || isLoadingLlmResponse}
+              disabled={isLoadingRefinement || isLoadingEngineering} // isLoadingLlmResponse removed
               className="w-full py-3 text-base"
             >
               <Terminal className="mr-2 h-5 w-5" />
@@ -95,24 +89,14 @@ export default function PromptPilotPage() {
             <section id="engineered-prompt-display">
               <EngineeredPromptDisplay
                 engineeredPrompt={aiEngineeredPrompt}
-                onCopy={() => copyToClipboard(aiEngineeredPrompt, 'Prompt')}
+                onCopy={() => copyToClipboard(aiEngineeredPrompt)} // Only one type of copy now
                 isLoading={isLoadingRefinement || isLoadingEngineering}
+                requestDownloadableFileContent={formData.requestDownloadableFileContent}
               />
             </section>
           )}
 
-          {/* Section 3: LLM Response Display (for file content) */}
-          {/* This section now appears if LLM response (file content) exists or is loading */}
-          {(llmResponseText || (formData.requestDownloadableFileContent && isLoadingLlmResponse)) && (
-            <section id="llm-response-display">
-              <LlmResponseDisplay
-                llmResponse={llmResponseText}
-                onCopy={() => copyToClipboard(llmResponseText, 'Response')}
-                isLoading={isLoadingLlmResponse} //isLoadingLlmResponse
-                outputFormat={formData.outputFormat}
-              />
-            </section>
-          )}
+          {/* LLM Response Display Section Removed */}
 
         </div>
       </main>
