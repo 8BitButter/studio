@@ -118,13 +118,60 @@ Based on the Primary Goal, focus on extracting the following details:
     prompt += `- Summarize the extracted information in a concise paragraph or series of paragraphs.
 - Ensure the summary flows well and incorporates the key details requested.
 `;
+  } else if (outputFormat === 'markdown') {
+    prompt += `- Present the extracted data as well-formatted Markdown.
+- Use appropriate Markdown elements such as headings (#, ##), lists (-, *), tables (if multiple records with consistent fields are extracted), and bold text (**label**) for clarity.
+- For single record extraction, a list of bolded labels followed by their values is suitable.
+- **Example Markdown for a single record (illustrative):**
+  \`\`\`markdown
+  **Invoice Number:** INV-2023-001
+  **Vendor Name:** ACME Corp
+  **Total Amount:** 150.75
+  \`\`\`
+- **Example Markdown Table for multiple records (illustrative):**
+  \`\`\`markdown
+  | Item Description | Quantity | Unit Price |
+  |------------------|----------|------------|
+  | Widget A         | 2        | 10.00      |
+  | Gadget B         | 1        | 25.50      |
+  \`\`\`
+`;
+  } else if (outputFormat === 'html_table') {
+    prompt += `- Generate a complete HTML table containing the extracted data.
+- The table should include \`<table>\`, \`<thead>\`, \`<tbody>\`, \`<tr>\`, \`<th>\` (for headers), and \`<td>\` (for data cells) tags.
+- Headers in the \`<thead>\` section should correspond to the "Details to Extract" or logical headers if none were specified.
+- Each record or item found in the document should be a separate \`<tr>\` in the \`<tbody>\`.
+- Ensure proper HTML escaping for any special characters within the data to prevent broken HTML.
+- **Example HTML Table Output Structure (illustrative):**
+  \`\`\`html
+  <table>
+    <thead>
+      <tr>
+        <th>Detail 1</th>
+        <th>Detail 2</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Record1 Value1</td>
+        <td>Record1 Value2</td>
+      </tr>
+      <tr>
+        <td>Record2 Value1</td>
+        <td>Record2 Value2</td>
+      </tr>
+    </tbody>
+  </table>
+  \`\`\`
+`;
   }
+
 
   prompt += `\n### 4. Formatting Rules & Handling Data
 - **Dates:** If extracting dates, format them as YYYY-MM-DD unless explicitly stated otherwise in the "Custom Instructions".
 - **Amounts/Numbers:** If extracting monetary values or numerical data, provide them as raw numbers (e.g., 1234.50 or 1234). Do not include currency symbols (like $, €) or thousands separators (like commas in 1,234) unless required by "Custom Instructions".
 - **Text Cleanup:** Strip any leading/trailing unnecessary whitespace from extracted text values. Ensure newlines within a field value are handled appropriately for the chosen output format (e.g., typically escaped or removed for CSV/JSON single line records, but might be preserved in paragraph or bulleted list outputs).
-- **Multiple Records:** If the document appears to contain multiple distinct records or items relevant to the Primary Goal (e.g., multiple line items in an invoice, multiple transactions in a statement), ensure each is processed and represented separately according to the Output Format chosen (e.g., a new row in CSV, a new object in the JSON array).
+- **Multiple Records:** If the document appears to contain multiple distinct records or items relevant to the Primary Goal (e.g., multiple line items in an invoice, multiple transactions in a statement), ensure each is processed and represented separately according to the Output Format chosen (e.g., a new row in CSV, a new object in the JSON array, a new row in an HTML/Markdown table).
 
 `;
 

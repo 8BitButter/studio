@@ -55,7 +55,7 @@ export const initialAppConfig: AppConfiguration = {
     },
     {
       id: 'receipt_general',
-      label: 'Receipt (General)',
+      label: 'Receipt',
       iconName: 'ShoppingCart',
       primaryGoals: [
         {
@@ -76,7 +76,7 @@ export const initialAppConfig: AppConfiguration = {
     },
     {
       id: 'payment_proof_utr',
-      label: 'Payment Proof / UTR Confirmation',
+      label: 'Payment Proofs / UTR Confirmations',
       iconName: 'ShieldCheck',
       primaryGoals: [
         {
@@ -141,7 +141,7 @@ export const initialAppConfig: AppConfiguration = {
     },
     {
       id: 'purchase_order',
-      label: 'Purchase Order (PO)',
+      label: 'Purchase Orders (POs)',
       iconName: 'ShoppingBag',
       primaryGoals: [
         {
@@ -162,7 +162,7 @@ export const initialAppConfig: AppConfiguration = {
     },
     {
       id: 'utility_rent_bills',
-      label: 'Utility / Rent Bills',
+      label: 'Bills / Utility Bills / Rent Bills',
       iconName: 'FileDigit',
       primaryGoals: [
         {
@@ -207,7 +207,7 @@ export const initialAppConfig: AppConfiguration = {
     },
     {
       id: 'tax_payment_challans',
-      label: 'Tax Payment Challans (GST, TDS, etc.)',
+      label: 'Challans (Tax Payment, PF, ESI, etc.)',
       iconName: 'FileCheck2',
       primaryGoals: [
         {
@@ -228,7 +228,7 @@ export const initialAppConfig: AppConfiguration = {
     },
     {
       id: 'registration_certs_pan_gst',
-      label: 'Registration Certificates (PAN, GST)',
+      label: 'PAN / GST / Registration Certificates',
       iconName: 'BadgeCheck',
       primaryGoals: [
         {
@@ -318,8 +318,8 @@ export const initialAppConfig: AppConfiguration = {
     { id: 'csv', label: 'CSV-like (Comma Separated)', iconName: 'FileSpreadsheet' },
     { id: 'bullets', label: 'Bulleted Points', iconName: 'List' },
     { id: 'paragraph', label: 'Paragraph Summary', iconName: 'AlignLeft' },
-    { id: 'json', label: 'JSON (JavaScript Object Notation)', iconName: 'Braces' },
+    { id: 'json', label: 'JSON', iconName: 'Braces' },
+    { id: 'markdown', label: 'Markdown', iconName: 'BookText' },
+    { id: 'html_table', label: 'HTML Table', iconName: 'Table2' },
   ],
 };
-
-    
