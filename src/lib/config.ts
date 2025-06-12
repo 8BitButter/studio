@@ -5,7 +5,7 @@ export const initialAppConfig: AppConfiguration = {
   documentTypes: [
     {
       id: 'invoice',
-      label: 'Invoice',
+      label: 'Invoice (Generic)',
       iconName: 'Receipt',
       primaryGoals: [
         {
@@ -26,6 +26,42 @@ export const initialAppConfig: AppConfiguration = {
             { id: 'currency', label: 'Currency' },
             { id: 'payment_terms', label: 'Payment Terms' },
             { id: 'po_number_if_applicable', label: 'PO Number (if applicable)' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'tax_invoice',
+      label: 'Tax Invoice (e.g., GST Invoice)',
+      iconName: 'BookCopy', // Changed icon
+      primaryGoals: [
+        {
+          id: 'extract_tax_invoice_data',
+          label: 'Extract Key Tax Invoice Data',
+          suggestedDetails: [
+            { id: 'tax_invoice_number', label: 'Invoice Number' },
+            { id: 'tax_invoice_date', label: 'Invoice Date (YYYY-MM-DD)' },
+            { id: 'seller_name', label: 'Seller/Supplier Name' },
+            { id: 'seller_address', label: 'Seller/Supplier Address' },
+            { id: 'seller_gstin', label: 'Seller/Supplier GSTIN/VAT ID' },
+            { id: 'buyer_name', label: 'Buyer/Recipient Name' },
+            { id: 'buyer_address', label: 'Buyer/Recipient Address' },
+            { id: 'buyer_gstin', label: 'Buyer/Recipient GSTIN/VAT ID' },
+            { id: 'hsn_sac_codes', label: 'HSN/SAC Code(s)' },
+            { id: 'item_service_descriptions', label: 'Item/Service Description(s)' },
+            { id: 'item_quantity', label: 'Quantity' },
+            { id: 'item_unit_price', label: 'Unit Price/Rate' },
+            { id: 'item_taxable_value', label: 'Taxable Value (per item/total)' },
+            { id: 'cgst_rate_amount', label: 'CGST Rate & Amount' },
+            { id: 'sgst_utgst_rate_amount', label: 'SGST/UTGST Rate & Amount' },
+            { id: 'igst_rate_amount', label: 'IGST Rate & Amount' },
+            { id: 'total_tax_amount', label: 'Total Tax Amount' },
+            { id: 'invoice_total_value', label: 'Total Invoice Value (incl. tax)' },
+            { id: 'place_of_supply', label: 'Place of Supply' },
+            { id: 'reverse_charge', label: 'Reverse Charge (Yes/No)' },
+            { id: 'eway_bill_number', label: 'E-way Bill Number (if applicable)' },
+            { id: 'tax_payment_terms', label: 'Payment Terms' },
+            { id: 'seller_bank_details', label: 'Seller Bank Details for Payment' },
           ],
         },
       ],
@@ -319,3 +355,4 @@ export const initialAppConfig: AppConfiguration = {
     { id: 'bullets', label: 'Bulleted Summary', iconName: 'List' },
   ],
 };
+
