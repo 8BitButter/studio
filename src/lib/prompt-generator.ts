@@ -19,25 +19,21 @@ export function generatePrompt(
   const outputFormatId = outputFormatConfig?.id || outputFormat;
 
   const instructionsToUse = customInstructionsOverride !== undefined ? customInstructionsOverride : formData.customInstructions;
+  const fileExtension = outputFormatId === 'csv' ? 'csv' : (outputFormatId === 'list' || outputFormatId === 'bullets' ? 'txt' : 'txt');
 
   let prompt = ``;
 
   if (requestDownloadableFileContent) {
-    // New, more direct intro for downloadable file content
-    prompt = `ATTENTION AI: Your primary task is to generate the complete content for a file that the user will download.
-You are an expert AI assistant. For this request, you must act as a direct file content generator.
-The user wants to extract data from a "${docTypeLabel}" and needs you to create a raw "${outputFormatLabel}" file with this data.
-This file is intended for direct use in applications like Excel or Tally (if CSV).
+    prompt = `Your SOLE TASK for this request is to PROVIDE THE CONTENT FOR A DOWNLOADABLE ${outputFormatLabel.toUpperCase()} FILE.
+The user requires a ${outputFormatLabel} file, and you must generate the complete, raw content that will form this downloadable file.
+ABSOLUTELY EVERYTHING in your response MUST BE the file content itself.
+Do NOT include any other text: no explanations, no apologies, no summaries, no conversational remarks, nothing before or after the file content.
+The user will take your entire output and save it directly as a .${fileExtension} file.
 
-IMPORTANT: Your ENTIRE response must be ONLY the raw ${outputFormatLabel} content.
-- NO conversational text.
-- NO introductions or explanations.
-- NO apologies or disclaimers.
-- Your output will be saved directly as a .${outputFormatId === 'csv' ? 'csv' : (outputFormatId === 'list' || outputFormatId === 'bullets' ? 'txt' : 'txt')} file by the user.
+The file content should be based on extracting data from a "${docTypeLabel}" document with the core objective of "${goalLabel}".
+All necessary context for generating this file content is assumed to be embedded within these instructions or known by you for the specified document type and objective.
 
-Adhere strictly to the following specifications for the file content:\n\n`;
-
-    prompt += `### Specifications for the Downloadable "${outputFormatLabel}" File Content:\n\n`;
+### Specifications for the Downloadable "${outputFormatLabel}" File Content:\n\n`;
     prompt += `- **Source Document Type (for content generation):** ${docTypeLabel}\n`;
     prompt += `- **Core Objective for File Content:** ${goalLabel}\n\n`;
 
@@ -103,7 +99,7 @@ Adhere strictly to the following specifications for the file content:\n\n`;
     }
 
     prompt += `\n### Final Instructions for Downloadable File Content Generation:\n`;
-    prompt += `Ensure all above specifications are met. The necessary context for generating the file content is assumed to be embedded within these instructions or known by you for the specified document type.
+    prompt += `Ensure all above specifications are met.
 Remember: Your entire output must be the file content itself. Do not add any surrounding text or explanations.`;
 
   } else {
