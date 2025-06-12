@@ -1,19 +1,19 @@
 
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { AppConfiguration, DocumentType, PrimaryGoal, PromptFormData, DocumentField } from '@/lib/types';
+import type { AppConfiguration, DocumentType, PromptFormData, DocumentField, ExecutePromptInput } from '@/lib/types';
 import { initialAppConfig } from '@/lib/config';
 import { generatePrompt } from '@/lib/prompt-generator';
 import { suggestNextOptions as fetchAiSuggestions } from '@/ai/flows/context-aware-prompting';
 import { refineCustomInstructionsFlow } from '@/ai/flows/refine-custom-instructions-flow';
 import { engineerFinalPromptFlow } from '@/ai/flows/engineer-final-prompt-flow';
+import { executePromptWithDocument as executePromptFlow } from '@/ai/flows/execute-prompt-flow'; // New flow
 import { useToast } from '@/hooks/use-toast';
 
 const LOCAL_STORAGE_KEY = 'promptPilotUserConfig';
 
-const defaultFormData: Omit<PromptFormData, 'primaryGoal'> & { primaryGoal?: string } = { // Allow primaryGoal for internal derivation initially
+const defaultFormData: Omit<PromptFormData, 'primaryGoal'> & { primaryGoal?: string } = {
   documentType: '',
-  // primaryGoal: '', // No longer part of user-facing form data
   selectedDetails: [],
   customDetails: [],
   outputFormat: '',
@@ -28,7 +28,10 @@ export function usePromptData() {
   const [isLoadingRefinement, setIsLoadingRefinement] = useState<boolean>(false);
   const [isLoadingEngineering, setIsLoadingEngineering] = useState<boolean>(false);
 
-  // No longer need availablePrimaryGoals state
+  const [documentContent, setDocumentContent] = useState<string>(''); // For user's document
+  const [llmResponseText, setLlmResponseText] = useState<string>(''); // For LLM's actual response
+  const [isLoadingLlmResponse, setIsLoadingLlmResponse] = useState<boolean>(false); // Loading state for LLM execution
+
   const [availableDetails, setAvailableDetails] = useState<DocumentField[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isLoadingAiSuggestions, setIsLoadingAiSuggestions] = useState<boolean>(false);
@@ -64,14 +67,10 @@ export function usePromptData() {
       const selectedDoc = appConfig.documentTypes.find(dt => dt.id === formData.documentType);
       const firstPrimaryGoal = selectedDoc?.primaryGoals?.[0];
       setAvailableDetails(firstPrimaryGoal?.suggestedDetails || []);
-      // If document type changes, reset details related to the old primary goal concept
-      // updateFormData('selectedDetails', []); // Consider if this is desired or if existing details should persist if relevant
     } else {
       setAvailableDetails([]);
-      // updateFormData('selectedDetails', []);
     }
   }, [formData.documentType, appConfig.documentTypes, updateFormData]);
-
 
   const serializedSelectedDetails = useMemo(() => JSON.stringify(formData.selectedDetails), [formData.selectedDetails]);
   const serializedCustomDetails = useMemo(() => JSON.stringify(formData.customDetails), [formData.customDetails]);
@@ -88,7 +87,7 @@ export function usePromptData() {
 
       fetchAiSuggestions({
         documentType: docTypeLabel,
-        primaryGoal: firstPrimaryGoalLabel, // Pass the label of the first primary goal
+        primaryGoal: firstPrimaryGoalLabel,
         selectedDetails: currentSelectedDetails, 
         selectedCustomDetails: currentCustomDetails,
       })
@@ -112,7 +111,6 @@ export function usePromptData() {
       formData.customDetails   
     ]);
 
-
   const triggerPromptEngineeringProcess = useCallback(async () => {
     if (!formData.documentType || !formData.outputFormat) {
       toast({
@@ -126,6 +124,7 @@ export function usePromptData() {
     setIsLoadingRefinement(true);
     setIsLoadingEngineering(true);
     setAiEngineeredPrompt(''); 
+    setLlmResponseText(''); // Clear previous LLM response
 
     let instructionsForBasePrompt = formData.customInstructions;
 
@@ -142,8 +141,6 @@ export function usePromptData() {
       setIsLoadingRefinement(false);
     }
     
-    // Pass the selected document type and appConfig to generatePrompt
-    // generatePrompt will derive the goalLabel internally
     const basePrompt = generatePrompt(formData, appConfig, instructionsForBasePrompt);
 
     try {
@@ -158,6 +155,38 @@ export function usePromptData() {
       setIsLoadingEngineering(false);
     }
   }, [formData, appConfig, toast]);
+
+  const triggerLlmExecution = useCallback(async () => {
+    if (!aiEngineeredPrompt) {
+      toast({ title: "No Engineered Prompt", description: "Please generate an engineered prompt first.", variant: "destructive" });
+      return;
+    }
+    if (!documentContent.trim()) {
+      toast({ title: "Missing Document Content", description: "Please paste the document content to process.", variant: "destructive" });
+      return;
+    }
+
+    setIsLoadingLlmResponse(true);
+    setLlmResponseText('');
+
+    try {
+      const executionInput: ExecutePromptInput = {
+        engineeredPrompt: aiEngineeredPrompt,
+        documentText: documentContent,
+      };
+      const result = await executePromptFlow(executionInput);
+      setLlmResponseText(result.llmResponseText);
+      toast({ title: "LLM Response Received", description: "The document has been processed." });
+    } catch (error) {
+      console.error("Error executing prompt with LLM:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      toast({ title: "LLM Execution Error", description: `Could not get response from LLM: ${errorMessage}`, variant: "destructive" });
+      setLlmResponseText(`Error getting response: ${errorMessage}`);
+    } finally {
+      setIsLoadingLlmResponse(false);
+    }
+  }, [aiEngineeredPrompt, documentContent, toast]);
+
 
   const handleDetailToggle = (detailLabel: string) => {
     const currentIndex = formData.selectedDetails.indexOf(detailLabel);
@@ -198,21 +227,24 @@ export function usePromptData() {
     setFormData(defaultFormData as Omit<PromptFormData, 'primaryGoal'>);
     setAiSuggestions([]);
     setAiEngineeredPrompt('');
+    setDocumentContent('');
+    setLlmResponseText('');
     setIsLoadingRefinement(false);
     setIsLoadingEngineering(false);
+    setIsLoadingLlmResponse(false);
     toast({ title: "Form Reset", description: "All selections have been cleared." });
   };
 
-  const copyToClipboard = () => {
-    if (!aiEngineeredPrompt) {
-      toast({ title: "Nothing to Copy", description: "Please generate a prompt first.", variant: "default" });
+  const copyToClipboard = (textToCopy: string, type: 'Prompt' | 'Response') => {
+    if (!textToCopy) {
+      toast({ title: "Nothing to Copy", description: `Please generate a ${type.toLowerCase()} first.`, variant: "default" });
       return;
     }
-    navigator.clipboard.writeText(aiEngineeredPrompt)
-      .then(() => toast({ title: "Prompt Copied!", description: "The engineered prompt has been copied to your clipboard." }))
+    navigator.clipboard.writeText(textToCopy)
+      .then(() => toast({ title: `${type} Copied!`, description: `The ${type.toLowerCase()} has been copied to your clipboard.` }))
       .catch(err => {
-        console.error("Failed to copy: ", err);
-        toast({ title: "Copy Failed", description: "Could not copy prompt to clipboard.", variant: "destructive" });
+        console.error(`Failed to copy ${type}: `, err);
+        toast({ title: "Copy Failed", description: `Could not copy ${type.toLowerCase()} to clipboard.`, variant: "destructive" });
       });
   };
 
@@ -255,7 +287,6 @@ export function usePromptData() {
 
     if (formData.documentType === docTypeIdToDelete) {
       updateFormData('documentType', '');
-      // No primaryGoal to update in formData
       updateFormData('selectedDetails', []);
       updateFormData('customDetails', []);
     }
@@ -269,7 +300,6 @@ export function usePromptData() {
     isLoadingRefinement,
     isLoadingEngineering,
     triggerPromptEngineeringProcess,
-    // availablePrimaryGoals, // No longer exposed
     availableDetails,
     handleDetailToggle,
     addCustomDetail,
@@ -281,5 +311,10 @@ export function usePromptData() {
     copyToClipboard,
     addNewDocumentType,
     deleteUserDefinedDocumentType,
+    documentContent,
+    setDocumentContent,
+    llmResponseText,
+    isLoadingLlmResponse,
+    triggerLlmExecution,
   };
 }

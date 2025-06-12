@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 
 export interface DocumentField {
@@ -38,3 +39,14 @@ export interface PromptFormData {
   outputFormat: string;
   customInstructions: string;
 }
+
+// For the new execute prompt flow
+export interface ExecutePromptInput {
+  engineeredPrompt: string;
+  documentText: string;
+}
+
+export interface ExecutePromptOutput {
+  llmResponseText: string;
+}
+
