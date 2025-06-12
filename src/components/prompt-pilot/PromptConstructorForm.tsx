@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { AppConfiguration, PromptFormData, PrimaryGoal, DocumentField } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -75,8 +75,29 @@ export function PromptConstructorForm({
     }
   };
   
-  const currentDocTypeDetails = config.documentTypes.find(dt => dt.id === formData.documentType);
+  const currentSelectedDoc = config.documentTypes.find(dt => dt.id === formData.documentType);
   const currentPrimaryGoal = availablePrimaryGoals.find(pg => pg.id === formData.primaryGoal);
+
+  const areAllSuggestedDetailsSelected = useMemo(() => {
+    if (!availableDetails || availableDetails.length === 0) return false;
+    const currentAvailableDetailLabels = availableDetails.map(d => d.label);
+    return currentAvailableDetailLabels.every(label => formData.selectedDetails.includes(label));
+  }, [availableDetails, formData.selectedDetails]);
+
+  const handleSelectAllSuggestedToggle = () => {
+    const currentAvailableDetailLabels = availableDetails.map(d => d.label);
+    if (areAllSuggestedDetailsSelected) {
+      // Deselect all *currently available* suggested details
+      const newSelectedDetails = formData.selectedDetails.filter(
+        label => !currentAvailableDetailLabels.includes(label)
+      );
+      updateFormData('selectedDetails', newSelectedDetails);
+    } else {
+      // Select all *currently available* suggested details, preserving existing selections
+      const newSelectedDetails = Array.from(new Set([...formData.selectedDetails, ...currentAvailableDetailLabels]));
+      updateFormData('selectedDetails', newSelectedDetails);
+    }
+  };
 
   return (
     <Card className="shadow-lg">
@@ -108,24 +129,17 @@ export function PromptConstructorForm({
               ))}
             </SelectContent>
           </Select>
-          {/* Dedicated Delete Button for User-Defined Document Types */}
-          {(() => {
-            const currentSelectedDoc = config.documentTypes.find(dt => dt.id === formData.documentType);
-            if (currentSelectedDoc && currentSelectedDoc.isUserDefined && formData.documentType) {
-              return (
-                <Button
-                  variant="destructive"
-                  onClick={() => deleteUserDefinedDocumentType(currentSelectedDoc.id)}
-                  className="mt-2 w-full sm:w-auto"
-                  aria-label={`Delete document type ${currentSelectedDoc.label}`}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete "{currentSelectedDoc.label}"
-                </Button>
-              );
-            }
-            return null;
-          })()}
+          {currentSelectedDoc && currentSelectedDoc.isUserDefined && formData.documentType && (
+            <Button
+              variant="destructive"
+              onClick={() => deleteUserDefinedDocumentType(currentSelectedDoc.id)}
+              className="mt-2 w-full sm:w-auto"
+              aria-label={`Delete document type ${currentSelectedDoc.label}`}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete "{currentSelectedDoc.label}"
+            </Button>
+          )}
         </div>
 
         {/* Step 2: Primary Goal */}
@@ -159,21 +173,35 @@ export function PromptConstructorForm({
                 <Info className="h-4 w-4 text-muted-foreground cursor-help" />
               </SectionTooltip>
             </div>
+
             {availableDetails.length > 0 && (
-              <ScrollArea className="h-40 rounded-md border p-4">
-                <div className="space-y-3">
-                  {availableDetails.map(detail => (
-                    <div key={detail.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`detail-${detail.id}`}
-                        checked={formData.selectedDetails.includes(detail.label)}
-                        onCheckedChange={() => handleDetailToggle(detail.label)}
-                      />
-                      <Label htmlFor={`detail-${detail.id}`} className="font-normal cursor-pointer">{detail.label}</Label>
-                    </div>
-                  ))}
+              <>
+                <div className="flex justify-start">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectAllSuggestedToggle}
+                    className="mb-2"
+                  >
+                    {areAllSuggestedDetailsSelected ? 'Deselect All Suggested' : 'Select All Suggested'}
+                  </Button>
                 </div>
-              </ScrollArea>
+                <ScrollArea className="max-h-60 rounded-md border p-4">
+                  <div className="space-y-3">
+                    {availableDetails.map(detail => (
+                      <div key={detail.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`detail-${detail.id}`}
+                          checked={formData.selectedDetails.includes(detail.label)}
+                          onCheckedChange={() => handleDetailToggle(detail.label)}
+                        />
+                        <Label htmlFor={`detail-${detail.id}`} className="font-normal cursor-pointer">{detail.label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </>
             )}
             
             <div className="space-y-2">
