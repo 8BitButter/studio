@@ -23,7 +23,7 @@ Your main task is to meticulously process the information based on the specifica
 `;
 
   if (requestDownloadableFileContent) {
-    prompt += `Your ENTIRE response MUST be the content of a file, formatted according to the "Output Format" specified. Do not include any explanatory text, preamble, or apologies before or after the file content itself. The context for generation is provided within this prompt.\n\n`;
+    prompt += `You are tasked with generating the content for a downloadable file. Your ENTIRE response MUST BE this file content, precisely formatted according to the "Output Format" specified below. Do not include any other text, explanations, apologies, or conversational elements whatsoever. The goal is to produce raw data ready to be saved directly as a file.\n\n`;
   }
 
   prompt += `### 1. Document Context (Implied or from Custom Instructions)
@@ -111,7 +111,7 @@ ${instructionsToUse}
 `;
   } else {
      prompt += `\n### ${instructionsToUse && instructionsToUse.trim() !== '' ? sectionNumber +1 : sectionNumber}. Execution Context
-Process this request based on the "Document Type Focus", "Primary Goal", "Details to Extract", "Output Format", and any "Special Instructions" provided above. The necessary context for generating the file content is assumed to be embedded within these instructions or known by you for the specified document type.
+Process this request based on the "Document Type Focus", "Primary Goal", "Details to Extract", "Output Format", and any "Special Instructions" provided above. The necessary context for generating the file content is assumed to be embedded within these instructions or known by you for the specified document type. Remember, your entire output must be the file content itself.
 `;
   }
   
