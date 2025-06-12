@@ -1,30 +1,32 @@
 
 'use server';
 /**
- * @fileOverview An AI agent that executes a given prompt with provided document text.
+ * @fileOverview An AI agent that executes a given prompt.
  *
- * - executePromptWithDocument - A function that takes an engineered prompt and document text,
- *   replaces a placeholder in the prompt with the document text, and gets a response from an LLM.
+ * - executePrompt - A function that takes an engineered prompt and gets a response from an LLM.
  * - ExecutePromptInput - The input type for the flow.
- * - ExecutePromptOutput - The output type for the flow.
+ * - ExecutePromptOutput - The output type for theflow.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type {ExecutePromptInput, ExecutePromptOutput} from '@/lib/types';
+// Types are now fully defined here as ExecutePromptInput has changed.
+// import type {ExecutePromptInput, ExecutePromptOutput} from '@/lib/types'; 
 
-// Schemas are defined in lib/types.ts and imported, so we don't redefine them here.
-// However, Genkit's defineFlow requires Zod schemas directly.
 const ExecutePromptInputSchema = z.object({
-  engineeredPrompt: z.string().describe("The fully engineered prompt to be sent to the LLM. It should contain a placeholder for document content."),
-  documentText: z.string().describe("The text content of the document to be processed by the LLM."),
+  engineeredPrompt: z.string().describe("The fully engineered prompt to be sent to the LLM. It should contain all necessary context if file content generation is expected."),
+  // documentText: z.string().describe("The text content of the document to be processed by the LLM."), // Removed
 });
+export type ExecutePromptInput = z.infer<typeof ExecutePromptInputSchema>;
+
 
 const ExecutePromptOutputSchema = z.object({
-  llmResponseText: z.string().describe("The text response from the LLM after processing the document with the prompt."),
+  llmResponseText: z.string().describe("The text response from the LLM after processing the prompt."),
 });
+export type ExecutePromptOutput = z.infer<typeof ExecutePromptOutputSchema>;
 
-const PROMPT_DOCUMENT_PLACEHOLDER = "[PASTE DOCUMENT TEXT HERE]";
+
+// const PROMPT_DOCUMENT_PLACEHOLDER = "[PASTE DOCUMENT TEXT HERE]"; // No longer needed
 
 export async function executePromptWithDocument(input: ExecutePromptInput): Promise<ExecutePromptOutput> {
   return executePromptFlow(input);
@@ -37,17 +39,17 @@ const executePromptFlow = ai.defineFlow(
     outputSchema: ExecutePromptOutputSchema,
   },
   async (input: ExecutePromptInput) => {
-    if (!input.engineeredPrompt.includes(PROMPT_DOCUMENT_PLACEHOLDER)) {
-      throw new Error(`Engineered prompt does not contain the required placeholder: ${PROMPT_DOCUMENT_PLACEHOLDER}`);
-    }
-
-    const finalPromptForLlm = input.engineeredPrompt.replace(PROMPT_DOCUMENT_PLACEHOLDER, input.documentText);
+    // Placeholder logic removed as engineeredPrompt is now self-contained if generating file content,
+    // or it contains its own placeholder if manual document pasting is expected (though UI for that is removed).
+    // if (!input.engineeredPrompt.includes(PROMPT_DOCUMENT_PLACEHOLDER)) {
+    //   // This check might be too strict now, or needs to be conditional based on a new flag
+    //   // For now, assume the prompt is ready or contains its own instructions for document content.
+    // }
+    // const finalPromptForLlm = input.engineeredPrompt.replace(PROMPT_DOCUMENT_PLACEHOLDER, input.documentText); // This line is removed
 
     const { text } = await ai.generate({
-      prompt: finalPromptForLlm,
+      prompt: input.engineeredPrompt, // Use the engineered prompt directly
       config: {
-        // Using default safety settings from the model configuration in genkit.ts
-        // Add specific safety settings here if needed for this flow
          safetySettings: [
             { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
             { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },

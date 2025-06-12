@@ -33,17 +33,17 @@ export interface AppConfiguration {
 
 export interface PromptFormData {
   documentType: string;
-  // primaryGoal: string; // Removed
   selectedDetails: string[];
   customDetails: string[]; // For user-added text input details
   outputFormat: string;
   customInstructions: string;
+  requestDownloadableFileContent: boolean; // New field
 }
 
 // For the new execute prompt flow
 export interface ExecutePromptInput {
   engineeredPrompt: string;
-  documentText: string;
+  // documentText: string; // Removed
 }
 
 export interface ExecutePromptOutput {

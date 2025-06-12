@@ -7,7 +7,7 @@ import { generatePrompt } from '@/lib/prompt-generator';
 import { suggestNextOptions as fetchAiSuggestions } from '@/ai/flows/context-aware-prompting';
 import { refineCustomInstructionsFlow } from '@/ai/flows/refine-custom-instructions-flow';
 import { engineerFinalPromptFlow } from '@/ai/flows/engineer-final-prompt-flow';
-import { executePromptWithDocument as executePromptFlow } from '@/ai/flows/execute-prompt-flow'; // New flow
+import { executePromptWithDocument as executePromptFlow } from '@/ai/flows/execute-prompt-flow';
 import { useToast } from '@/hooks/use-toast';
 
 const LOCAL_STORAGE_KEY = 'promptPilotUserConfig';
@@ -18,6 +18,7 @@ const defaultFormData: Omit<PromptFormData, 'primaryGoal'> & { primaryGoal?: str
   customDetails: [],
   outputFormat: '',
   customInstructions: '',
+  requestDownloadableFileContent: false, // Initialized
 };
 
 export function usePromptData() {
@@ -28,9 +29,9 @@ export function usePromptData() {
   const [isLoadingRefinement, setIsLoadingRefinement] = useState<boolean>(false);
   const [isLoadingEngineering, setIsLoadingEngineering] = useState<boolean>(false);
 
-  const [documentContent, setDocumentContent] = useState<string>(''); // For user's document
-  const [llmResponseText, setLlmResponseText] = useState<string>(''); // For LLM's actual response
-  const [isLoadingLlmResponse, setIsLoadingLlmResponse] = useState<boolean>(false); // Loading state for LLM execution
+  // const [documentContent, setDocumentContent] = useState<string>(''); // No longer used from UI
+  const [llmResponseText, setLlmResponseText] = useState<string>(''); 
+  const [isLoadingLlmResponse, setIsLoadingLlmResponse] = useState<boolean>(false); 
 
   const [availableDetails, setAvailableDetails] = useState<DocumentField[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
@@ -111,6 +112,28 @@ export function usePromptData() {
       formData.customDetails   
     ]);
 
+  const executeEngineeredPromptForFileContent = useCallback(async (promptToExecute: string) => {
+    setIsLoadingLlmResponse(true);
+    setLlmResponseText('');
+
+    try {
+      const executionInput: ExecutePromptInput = {
+        engineeredPrompt: promptToExecute,
+      };
+      const result = await executePromptFlow(executionInput);
+      setLlmResponseText(result.llmResponseText);
+      toast({ title: "File Content Generated", description: "The LLM has provided the file content. You can download it below." });
+    } catch (error) {
+      console.error("Error executing prompt for file content:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      toast({ title: "LLM Execution Error", description: `Could not get file content from LLM: ${errorMessage}`, variant: "destructive" });
+      setLlmResponseText(`Error getting file content: ${errorMessage}`);
+    } finally {
+      setIsLoadingLlmResponse(false);
+    }
+  }, [toast]);
+
+
   const triggerPromptEngineeringProcess = useCallback(async () => {
     if (!formData.documentType || !formData.outputFormat) {
       toast({
@@ -124,7 +147,7 @@ export function usePromptData() {
     setIsLoadingRefinement(true);
     setIsLoadingEngineering(true);
     setAiEngineeredPrompt(''); 
-    setLlmResponseText(''); // Clear previous LLM response
+    setLlmResponseText(''); 
 
     let instructionsForBasePrompt = formData.customInstructions;
 
@@ -141,51 +164,35 @@ export function usePromptData() {
       setIsLoadingRefinement(false);
     }
     
+    // Pass the full formData including requestDownloadableFileContent
     const basePrompt = generatePrompt(formData, appConfig, instructionsForBasePrompt);
 
     try {
       const finalEngineeredResult = await engineerFinalPromptFlow({ rawPrompt: basePrompt });
       setAiEngineeredPrompt(finalEngineeredResult.engineeredPrompt);
-      toast({ title: "Prompt Engineered!", description: "AI has generated an optimized prompt." });
+
+      if (formData.requestDownloadableFileContent) {
+        toast({ title: "Prompt Engineered!", description: "Now attempting to generate file content..." });
+        await executeEngineeredPromptForFileContent(finalEngineeredResult.engineeredPrompt);
+      } else {
+        toast({ title: "Prompt Engineered!", description: "AI has generated an optimized prompt." });
+      }
+
     } catch (error) {
       console.error("Error engineering final prompt:", error);
       toast({ title: "Engineering Error", description: "Could not engineer the final prompt.", variant: "destructive" });
       setAiEngineeredPrompt("Error generating engineered prompt. Please try again.");
+       if (formData.requestDownloadableFileContent) { // Ensure loading state is reset if engineering fails before execution
+            setIsLoadingLlmResponse(false);
+       }
     } finally {
       setIsLoadingEngineering(false);
+      // setIsLoadingLlmResponse is handled by executeEngineeredPromptForFileContent
     }
-  }, [formData, appConfig, toast]);
-
-  const triggerLlmExecution = useCallback(async () => {
-    if (!aiEngineeredPrompt) {
-      toast({ title: "No Engineered Prompt", description: "Please generate an engineered prompt first.", variant: "destructive" });
-      return;
-    }
-    if (!documentContent.trim()) {
-      toast({ title: "Missing Document Content", description: "Please paste the document content to process.", variant: "destructive" });
-      return;
-    }
-
-    setIsLoadingLlmResponse(true);
-    setLlmResponseText('');
-
-    try {
-      const executionInput: ExecutePromptInput = {
-        engineeredPrompt: aiEngineeredPrompt,
-        documentText: documentContent,
-      };
-      const result = await executePromptFlow(executionInput);
-      setLlmResponseText(result.llmResponseText);
-      toast({ title: "LLM Response Received", description: "The document has been processed." });
-    } catch (error) {
-      console.error("Error executing prompt with LLM:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast({ title: "LLM Execution Error", description: `Could not get response from LLM: ${errorMessage}`, variant: "destructive" });
-      setLlmResponseText(`Error getting response: ${errorMessage}`);
-    } finally {
-      setIsLoadingLlmResponse(false);
-    }
-  }, [aiEngineeredPrompt, documentContent, toast]);
+  }, [formData, appConfig, toast, executeEngineeredPromptForFileContent]);
+  
+  // This function is no longer called directly from UI, but by triggerPromptEngineeringProcess
+  const triggerLlmExecution = executeEngineeredPromptForFileContent;
 
 
   const handleDetailToggle = (detailLabel: string) => {
@@ -227,7 +234,7 @@ export function usePromptData() {
     setFormData(defaultFormData as Omit<PromptFormData, 'primaryGoal'>);
     setAiSuggestions([]);
     setAiEngineeredPrompt('');
-    setDocumentContent('');
+    // setDocumentContent(''); // No longer used from UI
     setLlmResponseText('');
     setIsLoadingRefinement(false);
     setIsLoadingEngineering(false);
@@ -311,10 +318,10 @@ export function usePromptData() {
     copyToClipboard,
     addNewDocumentType,
     deleteUserDefinedDocumentType,
-    documentContent,
-    setDocumentContent,
+    // documentContent, // No longer exposed as it's not managed via UI state
+    // setDocumentContent, // No longer exposed
     llmResponseText,
     isLoadingLlmResponse,
-    triggerLlmExecution,
+    triggerLlmExecution, // This now refers to executeEngineeredPromptForFileContent
   };
 }

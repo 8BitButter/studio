@@ -4,15 +4,15 @@ import React, { useState } from 'react';
 import { Header } from '@/components/prompt-pilot/Header';
 import { PromptConstructorForm } from '@/components/prompt-pilot/PromptConstructorForm';
 import { EngineeredPromptDisplay } from '@/components/prompt-pilot/EngineeredPromptDisplay';
-import { LlmResponseDisplay } from '@/components/prompt-pilot/LlmResponseDisplay'; // New component
+import { LlmResponseDisplay } from '@/components/prompt-pilot/LlmResponseDisplay';
 import { FeatureCreatorForm } from '@/components/prompt-pilot/FeatureCreatorForm';
 import { usePromptData } from '@/hooks/usePromptData';
-import { AlertCircle, Terminal, FileText, Send } from 'lucide-react';
+import { AlertCircle, Terminal } from 'lucide-react'; // Removed FileText, Send
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea'; // For document input
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'; // For document input section
-import { Label } from '@/components/ui/label';
+// import { Textarea } from '@/components/ui/textarea'; // No longer needed
+// import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'; // No longer needed for document input
+// import { Label } from '@/components/ui/label'; // No longer needed for document input
 
 export default function PromptPilotPage() {
   const {
@@ -34,14 +34,22 @@ export default function PromptPilotPage() {
     triggerPromptEngineeringProcess,
     isLoadingRefinement,
     isLoadingEngineering,
-    documentContent, // New state from hook
-    setDocumentContent, // New setter from hook
-    llmResponseText, // New state from hook
-    isLoadingLlmResponse, // New state from hook
-    triggerLlmExecution, // New function from hook
+    // documentContent, // Removed
+    // setDocumentContent, // Removed
+    llmResponseText, 
+    isLoadingLlmResponse, 
+    // triggerLlmExecution, // No longer called directly from UI
   } = usePromptData();
 
   const [isFeatureCreatorOpen, setFeatureCreatorOpen] = useState(false);
+
+  const isGeneratingContent = formData.requestDownloadableFileContent && (isLoadingEngineering || isLoadingLlmResponse);
+  const generateButtonText = () => {
+    if (isLoadingRefinement || isLoadingEngineering) return 'Engineering Prompt...';
+    if (isLoadingLlmResponse && formData.requestDownloadableFileContent) return 'Generating File Content...';
+    if (formData.requestDownloadableFileContent) return 'Generate Engineered Prompt & File Content';
+    return 'Generate Engineered Prompt';
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -69,8 +77,7 @@ export default function PromptPilotPage() {
               <AlertCircle className="h-4 w-4 text-accent" />
               <AlertTitle className="font-headline text-accent">Pro Tip!</AlertTitle>
               <AlertDescription className="text-foreground/80">
-                Use the "Create New Document Type" button to add your own custom document workflows to PromptPilot.
-                Your creations are saved locally in your browser.
+                Use "Create New Document Type" to save custom workflows. If "Generate downloadable file content" is checked, provide all necessary context for file generation in the custom instructions.
               </AlertDescription>
             </Alert>
              <Button 
@@ -79,7 +86,7 @@ export default function PromptPilotPage() {
               className="w-full py-3 text-base"
             >
               <Terminal className="mr-2 h-5 w-5" />
-              {isLoadingRefinement || isLoadingEngineering ? 'Engineering Prompt...' : 'Generate Engineered Prompt'}
+              {generateButtonText()}
             </Button>
           </section>
 
@@ -94,50 +101,14 @@ export default function PromptPilotPage() {
             </section>
           )}
 
-          {/* Section 3: Document Input & Execute Button (New) */}
-          {aiEngineeredPrompt && !isLoadingEngineering && !isLoadingRefinement && (
-            <section id="document-input-section" className="space-y-4">
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-6 w-6 text-primary" />
-                    <CardTitle className="font-headline text-xl md:text-2xl">Process Document</CardTitle>
-                  </div>
-                  <CardDescription>Paste the content of the document you want to process with the engineered prompt above.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Label htmlFor="documentContentTextarea" className="font-medium">Document Content:</Label>
-                    <Textarea
-                      id="documentContentTextarea"
-                      placeholder="Paste your document text here..."
-                      value={documentContent}
-                      onChange={(e) => setDocumentContent(e.target.value)}
-                      rows={10}
-                      className="resize-y min-h-[150px]"
-                      disabled={isLoadingLlmResponse}
-                    />
-                  </div>
-                  <Button
-                    onClick={triggerLlmExecution}
-                    disabled={isLoadingLlmResponse || !documentContent.trim()}
-                    className="w-full mt-4 py-3 text-base"
-                  >
-                    <Send className="mr-2 h-5 w-5" />
-                    {isLoadingLlmResponse ? 'Processing Document...' : 'Execute with Document'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </section>
-          )}
-          
-          {/* Section 4: LLM Response Display (New) */}
-          {(llmResponseText || isLoadingLlmResponse) && (
+          {/* Section 3: LLM Response Display (for file content) */}
+          {/* This section now appears if LLM response (file content) exists or is loading */}
+          {(llmResponseText || (formData.requestDownloadableFileContent && isLoadingLlmResponse)) && (
             <section id="llm-response-display">
               <LlmResponseDisplay
                 llmResponse={llmResponseText}
                 onCopy={() => copyToClipboard(llmResponseText, 'Response')}
-                isLoading={isLoadingLlmResponse}
+                isLoading={isLoadingLlmResponse} //isLoadingLlmResponse
                 outputFormat={formData.outputFormat}
               />
             </section>

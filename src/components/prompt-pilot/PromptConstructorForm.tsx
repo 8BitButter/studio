@@ -1,7 +1,7 @@
 
 "use client";
 import React, { useState, useMemo } from 'react';
-import type { AppConfiguration, PromptFormData, DocumentField, DocumentType } from '@/lib/types'; // PrimaryGoal no longer needed directly from props
+import type { AppConfiguration, PromptFormData, DocumentField, DocumentType } from '@/lib/types'; 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import IconResolver from './IconResolver';
-import { Lightbulb, Loader2, PlusCircle, Trash2, Info, RotateCcw } from 'lucide-react';
+import { Lightbulb, Loader2, PlusCircle, Trash2, Info, RotateCcw, FileDown } from 'lucide-react';
 import * as LucideIcons from 'lucide-react'; 
 import {
   Tooltip,
@@ -23,9 +23,8 @@ import {
 
 interface PromptConstructorFormProps {
   config: AppConfiguration;
-  formData: Omit<PromptFormData, 'primaryGoal'>; // formData no longer has primaryGoal
+  formData: Omit<PromptFormData, 'primaryGoal'>; 
   updateFormData: (field: keyof Omit<PromptFormData, 'primaryGoal'>, value: any) => void;
-  // availablePrimaryGoals: PrimaryGoal[]; // Removed
   availableDetails: DocumentField[];
   handleDetailToggle: (detailLabel: string) => void;
   addCustomDetail: (detail: string) => void;
@@ -54,7 +53,6 @@ export function PromptConstructorForm({
   config,
   formData,
   updateFormData,
-  // availablePrimaryGoals, // Removed
   availableDetails,
   handleDetailToggle,
   addCustomDetail,
@@ -139,8 +137,8 @@ export function PromptConstructorForm({
           )}
         </div>
 
-        {/* Step 2: Detail Specification (was Step 3) */}
-        {formData.documentType && availableDetails.length > 0 && ( // Show if a doc type is selected and details are available
+        {/* Step 2: Detail Specification */}
+        {formData.documentType && availableDetails.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Label className="text-base font-medium">Step 2: Specify Details to Extract</Label>
@@ -215,7 +213,6 @@ export function PromptConstructorForm({
         )}
         
         {/* AI Suggestions */}
-        {/* Show if doc type is selected AND (details are selected OR custom details exist OR available details are present for context) */}
         {formData.documentType && (formData.selectedDetails.length > 0 || formData.customDetails.length > 0 || availableDetails.length > 0) && (
           <div className="space-y-3 pt-2">
             <Separator />
@@ -252,8 +249,8 @@ export function PromptConstructorForm({
         )}
 
 
-        {/* Step 3: Output Format (was Step 4) */}
-        <div className="space-y-2">
+        {/* Step 3: Output Format */}
+        <div className="space-y-4"> {/* Increased spacing */}
           <div className="flex items-center space-x-2">
             <Label htmlFor="outputFormat" className="text-base font-medium">Step 3: Choose Output Format</Label>
              <SectionTooltip text="How should the LLM structure its response?">
@@ -275,19 +272,33 @@ export function PromptConstructorForm({
               ))}
             </SelectContent>
           </Select>
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox
+              id="requestDownloadableFileContent"
+              checked={formData.requestDownloadableFileContent}
+              onCheckedChange={(checked) => updateFormData('requestDownloadableFileContent', checked)}
+            />
+            <Label htmlFor="requestDownloadableFileContent" className="font-normal cursor-pointer flex items-center">
+              <FileDown className="mr-2 h-4 w-4 text-primary" />
+              Generate downloadable file content directly
+            </Label>
+             <SectionTooltip text="If checked, the LLM will provide its entire response as the content for a downloadable file, based on the selected output format. The prompt will be engineered to request this.">
+                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+            </SectionTooltip>
+          </div>
         </div>
 
-        {/* Step 4: Custom Instructions (was Step 5) */}
+        {/* Step 4: Custom Instructions */}
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
             <Label htmlFor="customInstructions" className="text-base font-medium">Step 4: Add Custom Instructions (Optional)</Label>
-            <SectionTooltip text="Provide any specific guidelines, exclusions, or clarifications for the LLM.">
+            <SectionTooltip text="Provide any specific guidelines, exclusions, or clarifications for the LLM. If 'Generate downloadable file content' is checked, ensure all context for file generation is included here or implied by other selections.">
                 <Info className="h-4 w-4 text-muted-foreground cursor-help" />
             </SectionTooltip>
           </div>
           <Textarea
             id="customInstructions"
-            placeholder="e.g., Exclude tax details, focus on transactions above $100, summarize in French..."
+            placeholder="e.g., Exclude tax details. If generating file content, ensure all necessary information for the LLM to create the file is provided here or through other form selections..."
             value={formData.customInstructions}
             onChange={(e) => updateFormData('customInstructions', e.target.value)}
             rows={4}
