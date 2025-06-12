@@ -26,9 +26,31 @@ export interface OutputFormat {
   iconName?: string; // Store icon name
 }
 
+// --- Gmail Scenario Types ---
+export interface GmailScenarioInputField {
+  id: string; // e.g., 'senderEmail', 'subjectKeywords'
+  label: string; // e.g., 'Sender Email Address', 'Keywords in Subject'
+  type: 'text' | 'select' | 'textarea'; // Can expand later (e.g., 'date', 'checkbox')
+  placeholder?: string;
+  options?: Array<{ value: string; label: string }>; // For 'select' type
+  required?: boolean;
+  defaultValue?: string;
+}
+
+export interface GmailScenario {
+  id: string; // e.g., 'extractAttachmentsBySender'
+  label: string; // e.g., 'Extract Attachments by Sender'
+  description: string; // Brief explanation
+  iconName?: string; // Lucide icon name
+  inputFields: GmailScenarioInputField[];
+  basePromptTemplate: string; // Template for the Gemini prompt
+  userGuide?: string; // Optional guide for the user on how to best use this scenario or interpret results
+}
+
 export interface AppConfiguration {
   documentTypes: DocumentType[];
   outputFormats: OutputFormat[];
+  gmailScenarios: GmailScenario[]; // Added for Gmail
 }
 
 export interface PromptFormData {
@@ -37,7 +59,6 @@ export interface PromptFormData {
   customDetails: string[]; // For user-added text input details
   outputFormat: string;
   customInstructions: string;
-  // requestDownloadableFileContent: boolean; // Removed field
 }
 
 // For the new execute prompt flow
@@ -47,4 +68,9 @@ export interface ExecutePromptInput {
 
 export interface ExecutePromptOutput {
   llmResponseText: string;
+}
+
+// For Gmail form data
+export interface GmailPromptFormData {
+  [key: string]: string | number | boolean | string[] | undefined; // Flexible for dynamic fields
 }

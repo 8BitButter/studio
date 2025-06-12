@@ -33,7 +33,7 @@ export const initialAppConfig: AppConfiguration = {
     {
       id: 'tax_invoice',
       label: 'Tax Invoice (e.g., GST Invoice)',
-      iconName: 'BookCopy', // Changed icon
+      iconName: 'BookCopy',
       primaryGoals: [
         {
           id: 'extract_tax_invoice_data',
@@ -354,5 +354,46 @@ export const initialAppConfig: AppConfiguration = {
     { id: 'list', label: 'Structured List (Key-Value Pairs)', iconName: 'ListOrdered' },
     { id: 'bullets', label: 'Bulleted Summary', iconName: 'List' },
   ],
+  gmailScenarios: [
+    {
+      id: 'extractAttachments',
+      label: 'Extract Attachments by Sender/Subject',
+      description: 'Finds emails from a specific sender or with subject keywords (or both) and lists their attachments.',
+      iconName: 'Paperclip',
+      inputFields: [
+        { id: 'senderEmail', label: 'Sender Email (Optional)', type: 'text', placeholder: 'e.g., newsletter@example.com' },
+        { id: 'subjectKeywords', label: 'Subject Contains (Optional)', type: 'text', placeholder: 'e.g., "Monthly Report"' },
+        { id: 'dateRange', label: 'Date Range', type: 'select', options: [ {value: 'last7days', label: 'Last 7 Days'}, {value: 'last30days', label: 'Last 30 Days'}, {value: 'allTime', label: 'All Time'} ], required: true, defaultValue: 'last7days' }
+      ],
+      basePromptTemplate: "List all attachments from emails {{#if senderEmail}}from:{{senderEmail}}{{/if}} {{#if subjectKeywords}}with subject:\"{{subjectKeywords}}\"{{/if}} received in:{{dateRange}}. For each email, list the email subject and the names of its attachments.",
+      userGuide: "Provide either a sender email, subject keywords, or both. The more specific you are, the better the results. This prompt will ask Gemini to search your Gmail and list attachments from matching emails."
+    },
+    {
+      id: 'summarizeEmails',
+      label: 'Summarize Emails by Subject/Sender',
+      description: 'Summarizes email threads based on subject keywords or from a specific sender.',
+      iconName: 'MessagesSquare',
+      inputFields: [
+        { id: 'senderEmail', label: 'Sender Email (Optional)', type: 'text', placeholder: 'e.g., boss@example.com' },
+        { id: 'subjectKeywords', label: 'Subject Contains (Optional)', type: 'text', placeholder: 'e.g., "Project Phoenix Update"' },
+        { id: 'dateRange', label: 'Date Range', type: 'select', options: [ {value: 'last7days', label: 'Last 7 Days'}, {value: 'last30days', label: 'Last 30 Days'}, {value: 'allTime', label: 'All Time'} ], required: true, defaultValue: 'last7days' },
+        { id: 'summaryLength', label: 'Summary Length', type: 'select', options: [ {value: 'brief', label: 'Brief'}, {value: 'detailed', label: 'Detailed'} ], required: true, defaultValue: 'brief' }
+      ],
+      basePromptTemplate: "Provide a {{summaryLength}} summary of emails {{#if senderEmail}}from:{{senderEmail}}{{/if}} {{#if subjectKeywords}}with subject:\"{{subjectKeywords}}\"{{/if}} received in:{{dateRange}}.",
+      userGuide: "Specify sender, subject, or both to target emails. Choose 'brief' for a quick overview or 'detailed' for more depth."
+    },
+    {
+        id: 'findClientCommunication',
+        label: 'Find Client Communication History',
+        description: 'Searches for all emails to or from a specific client, optionally filtered by keywords.',
+        iconName: 'Users',
+        inputFields: [
+            { id: 'clientEmail', label: 'Client Email Address', type: 'text', placeholder: 'e.g., client@company.com', required: true },
+            { id: 'keywords', label: 'Keywords (Optional)', type: 'text', placeholder: 'e.g., "contract" "invoice" "meeting"' },
+            { id: 'dateRange', label: 'Date Range', type: 'select', options: [ {value: 'last30days', label: 'Last 30 Days'}, {value: 'last90days', label: 'Last 90 Days'}, {value: 'allTime', label: 'All Time'} ], required: true, defaultValue: 'last30days' }
+        ],
+        basePromptTemplate: "List all emails exchanged with {{clientEmail}} {{#if keywords}}containing keywords:\"{{keywords}}\"{{/if}} received in:{{dateRange}}. For each email, include sender, recipient, subject, and date.",
+        userGuide: "Enter the client's email address. You can add keywords to narrow down the search (e.g., project name, specific terms)."
+    }
+  ],
 };
-
