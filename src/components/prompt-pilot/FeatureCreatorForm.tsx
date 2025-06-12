@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState } from 'react';
 import type { DocumentType, PrimaryGoal, DocumentField } from '@/lib/types';
@@ -18,16 +19,22 @@ import {
 } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 
+// Moved lucideIconNames generation outside the component for performance
+const lucideIconNames = Object.keys(LucideIcons)
+  .filter(key => {
+    const iconComponent = (LucideIcons as any)[key];
+    // Check if it's a valid React component (functional or forwardRef)
+    return typeof iconComponent === 'function' || 
+           (typeof iconComponent === 'object' && iconComponent !== null && typeof iconComponent.render === 'function');
+  })
+  .filter(key => key !== 'createLucideIcon' && key !== 'IconNode' && key !== 'default' && /^[A-Z]/.test(key)) // Filter out non-component exports and ensure it starts with an uppercase letter
+  .sort();
+
 interface FeatureCreatorFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (newDocType: DocumentType) => void;
 }
-
-const lucideIconNames = Object.keys(LucideIcons).filter(
-    key => typeof (LucideIcons as any)[key] === 'object' && (LucideIcons as any)[key].displayName !== undefined && key !== 'createLucideIcon' && key !== 'IconNode'
-).sort();
-
 
 export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFormProps) {
   const [docTypeName, setDocTypeName] = useState('');
@@ -56,8 +63,8 @@ export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFo
     if (!goal.suggestedDetails) {
       goal.suggestedDetails = [];
     }
-    // Ensure unique temp ID for new detail
-    goal.suggestedDetails.push({ id: `temp_detail_${Date.now()}_${Math.random()}`, label: '' });
+    // Ensure detail IDs are unique enough, though tempId is mostly for mapping
+    goal.suggestedDetails.push({ id: `temp_detail_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, label: '' });
     setPrimaryGoals(updatedGoals);
   };
 
@@ -91,7 +98,6 @@ export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFo
       return;
     }
 
-
     const newDocType: DocumentType = {
       id: docTypeName.trim().toLowerCase().replace(/\s+/g, '_') + `_${Date.now()}`, 
       label: docTypeName.trim(),
@@ -102,8 +108,8 @@ export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFo
         suggestedDetails: pg.suggestedDetails?.map((sd, sdIndex) => ({
           id: (sd.label.trim().toLowerCase().replace(/\s+/g, '_') || `detail_${sdIndex}`) + `_${Date.now()}`,
           label: sd.label.trim(),
-        })).filter(d => d.label) || [], // filter out empty labels
-      })).filter(g => g.label), // filter out empty goal labels
+        })).filter(d => d.label) || [],
+      })).filter(g => g.label),
       isUserDefined: true,
     };
     onSave(newDocType);
@@ -138,16 +144,16 @@ export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFo
             <Label htmlFor="docTypeIcon" className="text-right col-span-1">Icon</Label>
             <Select value={docTypeIcon} onValueChange={setDocTypeIcon}>
               <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select an icon (optional)" />
+                <div className="flex items-center gap-2 overflow-hidden">
+                  {docTypeIcon && <IconResolver name={docTypeIcon} className="h-4 w-4 flex-shrink-0" />}
+                  <SelectValue placeholder="Select an icon (optional)" />
+                </div>
               </SelectTrigger>
               <SelectContent className="max-h-60">
-                <SelectItem value="FileQuestion">(Default File Icon)</SelectItem>
+                <SelectItem value="FileQuestion">(Default) FileQuestion</SelectItem>
                 {lucideIconNames.map(name => (
                   <SelectItem key={name} value={name}>
-                    <div className="flex items-center">
-                       <IconResolver name={name} className="mr-2 h-4 w-4" />
-                      {name}
-                    </div>
+                    {name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -159,52 +165,53 @@ export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFo
             <div key={goal.tempId} className="border p-4 rounded-md space-y-3 bg-card">
               <div className="flex justify-between items-center">
                 <Label htmlFor={`goalName-${goalIndex}`} className="font-semibold">Goal #{goalIndex + 1}</Label>
-                <Button variant="ghost" size="icon" onClick={() => handleRemovePrimaryGoal(goalIndex)} aria-label="Remove primary goal">
+                <Button variant="ghost" size="icon" onClick={() => handleRemovePrimaryGoal(goalIndex)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
-              <Input
-                id={`goalName-${goalIndex}`}
-                value={goal.label || ''}
-                onChange={(e) => handlePrimaryGoalChange(goalIndex, 'label', e.target.value)}
-                placeholder="e.g., Extract Shipping Information"
-              />
-              
-              <div className="ml-4 space-y-2">
-                <Label className="text-sm font-medium">Suggested Details for this Goal:</Label>
-                {goal.suggestedDetails?.map((detail, detailIndex) => (
-                  <div key={detail.id || `detail_temp_${detailIndex}`} className="flex items-center space-x-2">
-                    <Input
-                      value={detail.label}
-                      onChange={(e) => handleSuggestedDetailChange(goalIndex, detailIndex, e.target.value)}
-                      placeholder="e.g., Tracking Number"
-                      className="flex-grow"
-                    />
-                    <Button variant="ghost" size="icon" onClick={() => handleRemoveSuggestedDetail(goalIndex, detailIndex)} aria-label="Remove suggested detail">
-                      <Trash2 className="h-4 w-4 text-destructive/70" />
-                    </Button>
-                  </div>
-                ))}
-                <Button variant="outline" size="sm" onClick={() => handleAddSuggestedDetail(goalIndex)}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Detail
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor={`goalNameInput-${goalIndex}`}>Goal Name</Label>
+                <Input
+                  id={`goalNameInput-${goalIndex}`}
+                  value={goal.label || ''}
+                  onChange={(e) => handlePrimaryGoalChange(goalIndex, 'label', e.target.value)}
+                  placeholder="e.g., Extract Contact Info"
+                />
               </div>
+              
+              <h5 className="font-medium text-sm mt-3">Suggested Details for this Goal:</h5>
+              {goal.suggestedDetails?.map((detail, detailIndex) => (
+                <div key={detail.id || `suggested-detail-${goalIndex}-${detailIndex}`} className="flex items-center space-x-2">
+                  <Input
+                    value={detail.label}
+                    onChange={(e) => handleSuggestedDetailChange(goalIndex, detailIndex, e.target.value)}
+                    placeholder={`Detail ${detailIndex + 1} label`}
+                    className="flex-grow"
+                  />
+                  <Button variant="ghost" size="icon" onClick={() => handleRemoveSuggestedDetail(goalIndex, detailIndex)} aria-label="Remove suggested detail">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={() => handleAddSuggestedDetail(goalIndex)} className="mt-2">
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Suggested Detail
+              </Button>
             </div>
           ))}
-          <Button variant="outline" onClick={handleAddPrimaryGoal} className="mt-2">
+          <Button variant="outline" onClick={handleAddPrimaryGoal} className="mt-4">
             <PlusCircle className="mr-2 h-4 w-4" /> Add Primary Goal
           </Button>
         </div>
         </ScrollArea>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" onClick={() => { resetForm(); onClose(); }}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
           </DialogClose>
-          <Button type="submit" onClick={handleSubmit}>
-            <Save className="mr-2 h-4 w-4" /> Save New Feature
-          </Button>
+          <Button type="button" onClick={handleSubmit}><Save className="mr-2 h-4 w-4" /> Save Document Type</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+    
