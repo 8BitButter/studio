@@ -57,49 +57,49 @@ body {
   }
 
   .dark {
-    --background: 225 30% 12%; /* Very dark, desaturated indigo */
-    --foreground: 220 20% 88%; /* Light cool gray text */
+    --background: 220 10% 15%; /* Dark Slate Gray */
+    --foreground: 210 15% 88%; /* Light Gray */
 
-    --card: 225 25% 18%; /* Slightly lighter dark indigo for cards */
-    --card-foreground: 220 20% 88%;
+    --card: 220 10% 22%; /* Slightly Lighter Slate for cards */
+    --card-foreground: 210 15% 88%;
 
-    --popover: 225 25% 18%;
-    --popover-foreground: 220 20% 88%;
+    --popover: 220 10% 22%;
+    --popover-foreground: 210 15% 88%;
 
-    --primary: 35 85% 60%; /* Vibrant Amber */
-    --primary-foreground: 225 30% 15%; /* Darker text on primary */
+    --primary: 30 75% 60%; /* Warm Copper */
+    --primary-foreground: 30 75% 15%; /* Darker text on primary */
 
-    --secondary: 225 20% 25%; /* Dark indigo secondary */
-    --secondary-foreground: 220 15% 75%;
+    --secondary: 220 10% 25%; /* Medium Slate secondary */
+    --secondary-foreground: 210 15% 75%;
 
-    --muted: 225 15% 30%;
-    --muted-foreground: 220 10% 65%;
+    --muted: 220 10% 30%;
+    --muted-foreground: 210 10% 65%;
 
-    --accent: 35 85% 60%; /* Amber */
-    --accent-foreground: 225 30% 15%;
+    --accent: 30 75% 60%; /* Warm Copper */
+    --accent-foreground: 30 75% 15%;
 
-    --destructive: 0 70% 55%; /* Brighter red for dark mode */
+    --destructive: 0 65% 55%; /* Slightly less intense red for dark mode */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 225 15% 35%;
-    --input: 225 20% 22%;
-    --ring: 35 85% 60%; /* Amber for rings */
+    --border: 220 10% 35%;
+    --input: 220 10% 20%;
+    --ring: 30 75% 60%; /* Warm Copper for rings */
     
-    --chart-1: 35 85% 60%; /* Amber */
-    --chart-2: 25 75% 65%; /* Lighter orange */
-    --chart-3: 45 70% 55%; /* Gold */
-    --chart-4: 230 40% 60%; /* Muted violet */
-    --chart-5: 240 30% 65%; /* Desaturated blue/purple */
+    --chart-1: 30 75% 60%; /* Copper */
+    --chart-2: 25 70% 65%; /* Lighter Copper/Orange */
+    --chart-3: 40 65% 55%; /* Muted Gold/Orange */
+    --chart-4: 15 50% 50%; /* Muted Terracotta */
+    --chart-5: 30 10% 70%; /* Light warm gray */
 
     /* Sidebar vars for dark theme */
-    --sidebar-background: 225 30% 15%;
-    --sidebar-foreground: 220 20% 88%;
-    --sidebar-primary: 35 85% 60%;
-    --sidebar-primary-foreground: 225 30% 15%;
-    --sidebar-accent: 225 25% 22%;
-    --sidebar-accent-foreground: 35 85% 60%;
-    --sidebar-border: 225 15% 35%;
-    --sidebar-ring: 35 85% 60%;
+    --sidebar-background: 220 10% 18%; /* Dark Slate for Sidebar BG */
+    --sidebar-foreground: 210 15% 88%;
+    --sidebar-primary: 30 75% 60%; /* Copper */
+    --sidebar-primary-foreground: 30 75% 15%;
+    --sidebar-accent: 220 10% 25%; /* Medium Slate for hover */
+    --sidebar-accent-foreground: 30 75% 60%; /* Copper text on accent */
+    --sidebar-border: 220 10% 35%;
+    --sidebar-ring: 30 75% 60%;
   }
 }
 
@@ -112,3 +112,4 @@ body {
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
