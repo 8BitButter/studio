@@ -109,10 +109,18 @@ export function PromptConstructorForm({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 p-0 ml-2 hover:bg-destructive/10 data-[state=selected]:hover:bg-destructive/20"
-                        onClick={(e) => {
-                          e.stopPropagation(); 
+                        className="h-6 w-6 p-0 ml-2 hover:bg-destructive/10"
+                        onPointerDown={(e) => {
                           e.preventDefault(); 
+                          e.stopPropagation();
+                        }}
+                        onClick={(e) => {
+                          // Note: onClick might not fire if onPointerDown's preventDefault is too aggressive
+                          // for the button itself, but the main goal is to stop SelectItem selection.
+                          // If delete doesn't work, move deleteUserDefinedDocumentType call to onPointerDown.
+                          // For now, let's assume onClick on the button still fires.
+                          e.stopPropagation(); // Still good practice here
+                          e.preventDefault(); // Still good practice here
                           deleteUserDefinedDocumentType(docType.id);
                         }}
                         aria-label={`Delete ${docType.label}`}
@@ -306,4 +314,3 @@ export function PromptConstructorForm({
     </Card>
   );
 }
-
