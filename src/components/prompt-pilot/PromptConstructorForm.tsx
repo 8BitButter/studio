@@ -1,7 +1,7 @@
 
 "use client";
 import React, { useState, useMemo } from 'react';
-import type { AppConfiguration, PromptFormData, PrimaryGoal, DocumentField } from '@/lib/types';
+import type { AppConfiguration, PromptFormData, DocumentField, DocumentType } from '@/lib/types'; // PrimaryGoal no longer needed directly from props
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,9 +23,9 @@ import {
 
 interface PromptConstructorFormProps {
   config: AppConfiguration;
-  formData: PromptFormData;
-  updateFormData: (field: keyof PromptFormData, value: any) => void;
-  availablePrimaryGoals: PrimaryGoal[];
+  formData: Omit<PromptFormData, 'primaryGoal'>; // formData no longer has primaryGoal
+  updateFormData: (field: keyof Omit<PromptFormData, 'primaryGoal'>, value: any) => void;
+  // availablePrimaryGoals: PrimaryGoal[]; // Removed
   availableDetails: DocumentField[];
   handleDetailToggle: (detailLabel: string) => void;
   addCustomDetail: (detail: string) => void;
@@ -54,7 +54,7 @@ export function PromptConstructorForm({
   config,
   formData,
   updateFormData,
-  availablePrimaryGoals,
+  // availablePrimaryGoals, // Removed
   availableDetails,
   handleDetailToggle,
   addCustomDetail,
@@ -75,8 +75,7 @@ export function PromptConstructorForm({
     }
   };
   
-  const currentSelectedDoc = config.documentTypes.find(dt => dt.id === formData.documentType);
-  const currentPrimaryGoal = availablePrimaryGoals.find(pg => pg.id === formData.primaryGoal);
+  const currentSelectedDocType = config.documentTypes.find(dt => dt.id === formData.documentType);
 
   const areAllSuggestedDetailsSelected = useMemo(() => {
     if (!availableDetails || availableDetails.length === 0) return false;
@@ -87,13 +86,11 @@ export function PromptConstructorForm({
   const handleSelectAllSuggestedToggle = () => {
     const currentAvailableDetailLabels = availableDetails.map(d => d.label);
     if (areAllSuggestedDetailsSelected) {
-      // Deselect all *currently available* suggested details
       const newSelectedDetails = formData.selectedDetails.filter(
         label => !currentAvailableDetailLabels.includes(label)
       );
       updateFormData('selectedDetails', newSelectedDetails);
     } else {
-      // Select all *currently available* suggested details, preserving existing selections
       const newSelectedDetails = Array.from(new Set([...formData.selectedDetails, ...currentAvailableDetailLabels]));
       updateFormData('selectedDetails', newSelectedDetails);
     }
@@ -129,46 +126,24 @@ export function PromptConstructorForm({
               ))}
             </SelectContent>
           </Select>
-          {currentSelectedDoc && currentSelectedDoc.isUserDefined && formData.documentType && (
+          {currentSelectedDocType && currentSelectedDocType.isUserDefined && formData.documentType && (
             <Button
               variant="destructive"
-              onClick={() => deleteUserDefinedDocumentType(currentSelectedDoc.id)}
+              onClick={() => deleteUserDefinedDocumentType(currentSelectedDocType.id)}
               className="mt-2 w-full sm:w-auto"
-              aria-label={`Delete document type ${currentSelectedDoc.label}`}
+              aria-label={`Delete document type ${currentSelectedDocType.label}`}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete "{currentSelectedDoc.label}"
+              Delete "{currentSelectedDocType.label}"
             </Button>
           )}
         </div>
 
-        {/* Step 2: Primary Goal */}
-        {formData.documentType && (
-          <div className="space-y-2">
-             <div className="flex items-center space-x-2">
-                <Label htmlFor="primaryGoal" className="text-base font-medium">Step 2: Choose Primary Goal</Label>
-                <SectionTooltip text="What is the main objective for processing this document?">
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                </SectionTooltip>
-              </div>
-            <Select value={formData.primaryGoal} onValueChange={(value) => updateFormData('primaryGoal', value)} disabled={!availablePrimaryGoals.length}>
-              <SelectTrigger id="primaryGoal" aria-label="Select Primary Goal">
-                <SelectValue placeholder="Select a primary goal..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availablePrimaryGoals.map(goal => (
-                  <SelectItem key={goal.id} value={goal.id}>{goal.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Step 3: Detail Specification */}
-        {formData.primaryGoal && (
+        {/* Step 2: Detail Specification (was Step 3) */}
+        {formData.documentType && availableDetails.length > 0 && ( // Show if a doc type is selected and details are available
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <Label className="text-base font-medium">Step 3: Specify Details to Extract</Label>
+              <Label className="text-base font-medium">Step 2: Specify Details to Extract</Label>
               <SectionTooltip text="Select common details or add your own custom fields for extraction.">
                 <Info className="h-4 w-4 text-muted-foreground cursor-help" />
               </SectionTooltip>
@@ -240,7 +215,8 @@ export function PromptConstructorForm({
         )}
         
         {/* AI Suggestions */}
-        {formData.documentType && (formData.selectedDetails.length > 0 || formData.customDetails.length > 0 || currentPrimaryGoal) && (
+        {/* Show if doc type is selected AND (details are selected OR custom details exist OR available details are present for context) */}
+        {formData.documentType && (formData.selectedDetails.length > 0 || formData.customDetails.length > 0 || availableDetails.length > 0) && (
           <div className="space-y-3 pt-2">
             <Separator />
             <div className="flex items-center space-x-2">
@@ -276,10 +252,10 @@ export function PromptConstructorForm({
         )}
 
 
-        {/* Step 4: Output Format */}
+        {/* Step 3: Output Format (was Step 4) */}
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
-            <Label htmlFor="outputFormat" className="text-base font-medium">Step 4: Choose Output Format</Label>
+            <Label htmlFor="outputFormat" className="text-base font-medium">Step 3: Choose Output Format</Label>
              <SectionTooltip text="How should the LLM structure its response?">
                 <Info className="h-4 w-4 text-muted-foreground cursor-help" />
               </SectionTooltip>
@@ -301,10 +277,10 @@ export function PromptConstructorForm({
           </Select>
         </div>
 
-        {/* Step 5: Custom Instructions */}
+        {/* Step 4: Custom Instructions (was Step 5) */}
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
-            <Label htmlFor="customInstructions" className="text-base font-medium">Step 5: Add Custom Instructions (Optional)</Label>
+            <Label htmlFor="customInstructions" className="text-base font-medium">Step 4: Add Custom Instructions (Optional)</Label>
             <SectionTooltip text="Provide any specific guidelines, exclusions, or clarifications for the LLM.">
                 <Info className="h-4 w-4 text-muted-foreground cursor-help" />
             </SectionTooltip>
@@ -335,4 +311,3 @@ export function PromptConstructorForm({
     </Card>
   );
 }
-

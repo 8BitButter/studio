@@ -32,7 +32,7 @@ export interface AppConfiguration {
 
 export interface PromptFormData {
   documentType: string;
-  primaryGoal: string;
+  // primaryGoal: string; // Removed
   selectedDetails: string[];
   customDetails: string[]; // For user-added text input details
   outputFormat: string;

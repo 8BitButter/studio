@@ -16,7 +16,7 @@ export default function PromptPilotPage() {
     formData,
     updateFormData,
     aiEngineeredPrompt,
-    availablePrimaryGoals,
+    // availablePrimaryGoals, // Removed
     availableDetails,
     handleDetailToggle,
     addCustomDetail,
@@ -27,7 +27,7 @@ export default function PromptPilotPage() {
     resetForm,
     copyToClipboard,
     addNewDocumentType,
-    deleteUserDefinedDocumentType, // Added this
+    deleteUserDefinedDocumentType, 
     triggerPromptEngineeringProcess,
     isLoadingRefinement,
     isLoadingEngineering,
@@ -45,7 +45,7 @@ export default function PromptPilotPage() {
               config={appConfig}
               formData={formData}
               updateFormData={updateFormData}
-              availablePrimaryGoals={availablePrimaryGoals}
+              // availablePrimaryGoals={availablePrimaryGoals} // Removed
               availableDetails={availableDetails}
               handleDetailToggle={handleDetailToggle}
               addCustomDetail={addCustomDetail}
@@ -55,7 +55,7 @@ export default function PromptPilotPage() {
               addAiSuggestionToDetails={addAiSuggestionToDetails}
               onReset={resetForm}
               onFeatureCreatorOpen={() => setFeatureCreatorOpen(true)}
-              deleteUserDefinedDocumentType={deleteUserDefinedDocumentType} // Passed this down
+              deleteUserDefinedDocumentType={deleteUserDefinedDocumentType} 
             />
             <Alert variant="default" className="bg-accent/10 border-accent/30 text-accent-foreground">
               <AlertCircle className="h-4 w-4 text-accent" />
@@ -99,4 +99,3 @@ export default function PromptPilotPage() {
     </div>
   );
 }
-

@@ -1,5 +1,5 @@
 
-import type { PromptFormData, AppConfiguration } from './types';
+import type { PromptFormData, AppConfiguration, DocumentType } from './types';
 
 // Helper function to convert strings to snake_case
 function toSnakeCase(str: string): string {
@@ -10,14 +10,19 @@ function toSnakeCase(str: string): string {
 }
 
 export function generatePrompt(
-  formData: PromptFormData,
+  formData: Omit<PromptFormData, 'primaryGoal'>, // formData no longer contains primaryGoal directly
   config: AppConfiguration,
   customInstructionsOverride?: string
 ): string {
-  const { documentType, primaryGoal, selectedDetails, customDetails, outputFormat } = formData;
+  const { documentType, selectedDetails, customDetails, outputFormat } = formData;
 
-  const docTypeLabel = config.documentTypes.find(dt => dt.id === documentType)?.label || documentType;
-  const goalLabel = config.documentTypes.find(dt => dt.id === documentType)?.primaryGoals.find(pg => pg.id === primaryGoal)?.label || primaryGoal;
+  const docTypeConfig = config.documentTypes.find(dt => dt.id === documentType);
+  const docTypeLabel = docTypeConfig?.label || documentType;
+  
+  // Infer the goalLabel from the first primary goal of the selected document type
+  const firstPrimaryGoal = docTypeConfig?.primaryGoals?.[0];
+  const goalLabel = firstPrimaryGoal?.label || "Extract relevant data from the document"; // Fallback if no goals defined
+
   const outputFormatLabel = config.outputFormats.find(of => of.id === outputFormat)?.label || outputFormat;
 
   const instructionsToUse = customInstructionsOverride !== undefined ? customInstructionsOverride : formData.customInstructions;
@@ -39,50 +44,58 @@ Based on the Primary Goal, focus on extracting the following details:
       prompt += `- ${detail}\n`;
     });
   } else {
-    prompt += `- No specific details were pre-selected. Use your expert judgment based on the Primary Goal and Document Type to identify and extract relevant information.\n`;
+    // If no specific details, refer to the inferred primary goal's suggested details (if any)
+    const suggestedDetailsFromGoal = firstPrimaryGoal?.suggestedDetails;
+    if (suggestedDetailsFromGoal && suggestedDetailsFromGoal.length > 0) {
+      prompt += `Refer to the typical details for a "${goalLabel}" task on a "${docTypeLabel}". These include:\n`;
+      suggestedDetailsFromGoal.forEach(detail => {
+         prompt += `- ${detail.label}\n`;
+      });
+    } else {
+       prompt += `- No specific details were pre-selected or automatically suggested. Use your expert judgment based on the Primary Goal ("${goalLabel}") and Document Type ("${docTypeLabel}") to identify and extract relevant information.\n`;
+    }
   }
 
   prompt += `\n### 3. Output Format: ${outputFormatLabel}\n`;
 
   if (outputFormat === 'csv') {
     prompt += `Provide the result in CSV (Comma Separated Values) format.
-- **Headers:** The first line MUST be a header row. The column names in the header should exactly match the "Details to Extract" listed above, in the same order.
+- **Headers:** The first line MUST be a header row. The column names in the header should exactly match the "Details to Extract" listed above, in the same order. If no specific details were listed, use appropriate headers based on the extracted information.
 - **Data Rows:** Each subsequent line should represent a distinct record or item found in the document.
 - **Field Order:** Maintain the order of fields in each row as listed in the "Details to Extract".
 - **Missing Data:** If a value for a specific detail is not found or is not applicable for a record, leave the field blank but RETAIN THE COMMA to ensure correct column alignment.
 - **Example CSV Output Structure (illustrative, actual headers will depend on your "Details to Extract"):**
   \`\`\`csv
-  ${allDetails.length > 0 ? allDetails.join(',') : 'Header1,Header2,Header3'}
-  ${allDetails.length > 0 ? allDetails.map((_, i) => `record1_value_for_detail${i + 1}`).join(',') : 'record1_val1,record1_val2,record1_val3'}
-  ${allDetails.length > 0 ? allDetails.map((_, i) => i === 1 ? '' : `record2_value_for_detail${i + 1}`).join(',') : 'record2_val1,,record2_val3'}
+  ${allDetails.length > 0 ? allDetails.join(',') : (firstPrimaryGoal?.suggestedDetails?.map(d=>d.label).join(',') || 'Header1,Header2,Header3')}
+  ${allDetails.length > 0 ? allDetails.map((_, i) => `record1_value_for_detail${i + 1}`).join(',') : (firstPrimaryGoal?.suggestedDetails?.map((d,i)=>`record1_val_for_${d.label.substring(0,5)}`).join(',') || 'record1_val1,record1_val2,record1_val3')}
+  ${allDetails.length > 0 ? allDetails.map((_, i) => i === 1 ? '' : `record2_value_for_detail${i + 1}`).join(',') : (firstPrimaryGoal?.suggestedDetails?.map((d,i)=> i === 1 ? '' : `record2_val_for_${d.label.substring(0,5)}`).join(',') || 'record2_val1,,record2_val3')}
   \`\`\`
 `;
   } else if (outputFormat === 'json') {
-    const exampleKeys = allDetails.length > 0 ? allDetails : ['field_1', 'field_2', 'field_3'];
+    const keysForExample = allDetails.length > 0 ? allDetails : (firstPrimaryGoal?.suggestedDetails?.map(d => d.label) || ['field_1', 'field_2', 'field_3']);
     const exampleRecord: { [key: string]: any } = {};
-    exampleKeys.forEach((detail, index) => {
+    keysForExample.forEach((detail, index) => {
         const key = toSnakeCase(detail);
         if (detail.toLowerCase().includes('amount') || detail.toLowerCase().includes('price') || detail.toLowerCase().includes('quantity') || detail.toLowerCase().includes('number')) {
-            exampleRecord[key] = index === 1 && exampleKeys.length > 1 ? null : 123.45;
+            exampleRecord[key] = index === 1 && keysForExample.length > 1 ? null : 123.45;
         } else if (detail.toLowerCase().includes('date')) {
-            exampleRecord[key] = index === 1 && exampleKeys.length > 1 ? null : "YYYY-MM-DD";
+            exampleRecord[key] = index === 1 && keysForExample.length > 1 ? null : "YYYY-MM-DD";
         }
         else {
-            exampleRecord[key] = index === 1 && exampleKeys.length > 1 ? "" : `value_for_${key}`;
+            exampleRecord[key] = index === 1 && keysForExample.length > 1 ? "" : `value_for_${key}`;
         }
     });
      const exampleJson = {
       [`extracted_${toSnakeCase(docTypeLabel || "items").replace(/s$/, "")}s`]: [
         exampleRecord,
-        // A second example object if multiple details to show structure
-        ...(exampleKeys.length > 1 ? [{ ...exampleRecord, [toSnakeCase(exampleKeys[0])]: `another_value_for_${toSnakeCase(exampleKeys[0])}`, [toSnakeCase(exampleKeys[1])]: exampleKeys[1].toLowerCase().includes('amount') ? 678.90 : (exampleKeys[1].toLowerCase().includes('date') ? "YYYY-MM-DD" : "") }] : [])
+        ...(keysForExample.length > 1 ? [{ ...exampleRecord, [toSnakeCase(keysForExample[0])]: `another_value_for_${toSnakeCase(keysForExample[0])}`, [toSnakeCase(keysForExample[1])]: keysForExample[1].toLowerCase().includes('amount') ? 678.90 : (keysForExample[1].toLowerCase().includes('date') ? "YYYY-MM-DD" : "") }] : [])
       ]
     };
 
     prompt += `Return the extracted results as a single JSON object.
 - **Structure:** The JSON object should have a primary key (e.g., "extracted_records", or a key relevant to the document type like "${toSnakeCase(docTypeLabel || "items").replace(/s$/, "")}s"). The value of this key MUST be an array of JSON objects.
 - **Array Elements:** Each JSON object within the array represents a distinct record or item found.
-- **Object Keys:** Keys within each item object should be the snake_case version of the "Details to Extract" labels (e.g., "Invoice Number" becomes "invoice_number").
+- **Object Keys:** Keys within each item object should be the snake_case version of the "Details to Extract" labels (e.g., "Invoice Number" becomes "invoice_number"). If no specific details were listed, use logical snake_case keys for the data you extract based on the document.
 - **Missing/Empty Data:**
     - For missing textual data, use an empty string (\`""\`).
     - For missing numerical or date data where applicable, use \`null\`. If unsure, default to \`""\`.

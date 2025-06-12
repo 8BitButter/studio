@@ -11,9 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 
 const LOCAL_STORAGE_KEY = 'promptPilotUserConfig';
 
-const defaultFormData: PromptFormData = {
+const defaultFormData: Omit<PromptFormData, 'primaryGoal'> & { primaryGoal?: string } = { // Allow primaryGoal for internal derivation initially
   documentType: '',
-  primaryGoal: '',
+  // primaryGoal: '', // No longer part of user-facing form data
   selectedDetails: [],
   customDetails: [],
   outputFormat: '',
@@ -22,13 +22,13 @@ const defaultFormData: PromptFormData = {
 
 export function usePromptData() {
   const [appConfig, setAppConfig] = useState<AppConfiguration>(initialAppConfig);
-  const [formData, setFormData] = useState<PromptFormData>(defaultFormData);
+  const [formData, setFormData] = useState<Omit<PromptFormData, 'primaryGoal'>>(defaultFormData as Omit<PromptFormData, 'primaryGoal'>);
   
   const [aiEngineeredPrompt, setAiEngineeredPrompt] = useState<string>('');
   const [isLoadingRefinement, setIsLoadingRefinement] = useState<boolean>(false);
   const [isLoadingEngineering, setIsLoadingEngineering] = useState<boolean>(false);
 
-  const [availablePrimaryGoals, setAvailablePrimaryGoals] = useState<PrimaryGoal[]>([]);
+  // No longer need availablePrimaryGoals state
   const [availableDetails, setAvailableDetails] = useState<DocumentField[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isLoadingAiSuggestions, setIsLoadingAiSuggestions] = useState<boolean>(false);
@@ -45,7 +45,7 @@ export function usePromptData() {
             documentTypes: [
               ...initialAppConfig.documentTypes,
               ...userDefinedDocumentTypes.map(dt => ({ ...dt, isUserDefined: true }))
-            ].filter((dt, index, self) => index === self.findIndex(t => t.id === dt.id || t.label === dt.label)), // Deduplicate
+            ].filter((dt, index, self) => index === self.findIndex(t => t.id === dt.id || t.label === dt.label)), 
           }));
         }
       }
@@ -55,32 +55,23 @@ export function usePromptData() {
     }
   }, [toast]);
 
-  const updateFormData = useCallback((field: keyof PromptFormData, value: any) => {
+  const updateFormData = useCallback((field: keyof Omit<PromptFormData, 'primaryGoal'>, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
   useEffect(() => {
     if (formData.documentType) {
       const selectedDoc = appConfig.documentTypes.find(dt => dt.id === formData.documentType);
-      setAvailablePrimaryGoals(selectedDoc?.primaryGoals || []);
-      if (selectedDoc && (!formData.primaryGoal || !selectedDoc.primaryGoals.find(pg => pg.id === formData.primaryGoal))) {
-         updateFormData('primaryGoal', ''); 
-      }
+      const firstPrimaryGoal = selectedDoc?.primaryGoals?.[0];
+      setAvailableDetails(firstPrimaryGoal?.suggestedDetails || []);
+      // If document type changes, reset details related to the old primary goal concept
+      // updateFormData('selectedDetails', []); // Consider if this is desired or if existing details should persist if relevant
     } else {
-      setAvailablePrimaryGoals([]);
-      updateFormData('primaryGoal', '');
+      setAvailableDetails([]);
+      // updateFormData('selectedDetails', []);
     }
   }, [formData.documentType, appConfig.documentTypes, updateFormData]);
 
-  useEffect(() => {
-    if (formData.primaryGoal && formData.documentType) {
-      const selectedDoc = appConfig.documentTypes.find(dt => dt.id === formData.documentType);
-      const selectedGoal = selectedDoc?.primaryGoals.find(pg => pg.id === formData.primaryGoal);
-      setAvailableDetails(selectedGoal?.suggestedDetails || []);
-    } else {
-      setAvailableDetails([]);
-    }
-  }, [formData.primaryGoal, formData.documentType, appConfig.documentTypes, updateFormData]);
 
   const serializedSelectedDetails = useMemo(() => JSON.stringify(formData.selectedDetails), [formData.selectedDetails]);
   const serializedCustomDetails = useMemo(() => JSON.stringify(formData.customDetails), [formData.customDetails]);
@@ -88,15 +79,16 @@ export function usePromptData() {
   useEffect(() => {
     if (formData.documentType) {
       setIsLoadingAiSuggestions(true);
-      const docTypeLabel = appConfig.documentTypes.find(dt => dt.id === formData.documentType)?.label || formData.documentType;
-      const goalLabel = availablePrimaryGoals.find(g => g.id === formData.primaryGoal)?.label;
+      const selectedDoc = appConfig.documentTypes.find(dt => dt.id === formData.documentType);
+      const docTypeLabel = selectedDoc?.label || formData.documentType;
+      const firstPrimaryGoalLabel = selectedDoc?.primaryGoals?.[0]?.label;
       
       const currentSelectedDetails = formData.selectedDetails || [];
       const currentCustomDetails = formData.customDetails || [];
 
       fetchAiSuggestions({
         documentType: docTypeLabel,
-        primaryGoal: goalLabel,
+        primaryGoal: firstPrimaryGoalLabel, // Pass the label of the first primary goal
         selectedDetails: currentSelectedDetails, 
         selectedCustomDetails: currentCustomDetails,
       })
@@ -112,14 +104,12 @@ export function usePromptData() {
     }
   }, [
       formData.documentType,
-      formData.primaryGoal,
       serializedSelectedDetails, 
       serializedCustomDetails,  
       appConfig.documentTypes, 
-      availablePrimaryGoals, 
       toast,
-      formData.selectedDetails, // Direct dependencies for fetchAiSuggestions
-      formData.customDetails   // Direct dependencies for fetchAiSuggestions
+      formData.selectedDetails, 
+      formData.customDetails   
     ]);
 
 
@@ -152,6 +142,8 @@ export function usePromptData() {
       setIsLoadingRefinement(false);
     }
     
+    // Pass the selected document type and appConfig to generatePrompt
+    // generatePrompt will derive the goalLabel internally
     const basePrompt = generatePrompt(formData, appConfig, instructionsForBasePrompt);
 
     try {
@@ -203,7 +195,7 @@ export function usePromptData() {
   };
 
   const resetForm = () => {
-    setFormData(defaultFormData);
+    setFormData(defaultFormData as Omit<PromptFormData, 'primaryGoal'>);
     setAiSuggestions([]);
     setAiEngineeredPrompt('');
     setIsLoadingRefinement(false);
@@ -263,7 +255,7 @@ export function usePromptData() {
 
     if (formData.documentType === docTypeIdToDelete) {
       updateFormData('documentType', '');
-      updateFormData('primaryGoal', '');
+      // No primaryGoal to update in formData
       updateFormData('selectedDetails', []);
       updateFormData('customDetails', []);
     }
@@ -277,7 +269,7 @@ export function usePromptData() {
     isLoadingRefinement,
     isLoadingEngineering,
     triggerPromptEngineeringProcess,
-    availablePrimaryGoals,
+    // availablePrimaryGoals, // No longer exposed
     availableDetails,
     handleDetailToggle,
     addCustomDetail,
@@ -291,4 +283,3 @@ export function usePromptData() {
     deleteUserDefinedDocumentType,
   };
 }
-
