@@ -14,18 +14,20 @@ export function generatePrompt(
   const firstPrimaryGoal = docTypeConfig?.primaryGoals?.[0];
   const goalLabel = firstPrimaryGoal?.label || "Extract relevant data from the document"; 
 
-  const outputFormatLabel = config.outputFormats.find(of => of.id === outputFormat)?.label || outputFormat;
+  const outputFormatConfig = config.outputFormats.find(of => of.id === outputFormat);
+  const outputFormatLabel = outputFormatConfig?.label || outputFormat;
+  const outputFormatId = outputFormatConfig?.id || outputFormat;
+
   const instructionsToUse = customInstructionsOverride !== undefined ? customInstructionsOverride : formData.customInstructions;
 
-  let prompt = `You are an expert AI assistant.\n`;
+  let prompt = ``;
 
   if (requestDownloadableFileContent) {
-    prompt += `Your primary instruction is to generate and provide the content for a downloadable file.
-This content should be based on a "${docTypeLabel}" document, with a focus on "${goalLabel}".
-Your ENTIRE response MUST BE the file content itself, formatted as "${outputFormatLabel}".
-Do NOT include any conversational text, introductions, explanations, or any text other than the raw file content. The output must be immediately ready to be saved as a file by the user.\n\n`;
+    prompt += `You are an expert AI assistant specializing in generating downloadable file content. Your task is to create a ${outputFormatLabel} file containing key data extracted from a "${docTypeLabel}".
+The entire output must be the raw ${outputFormatId === 'csv' ? 'CSV' : outputFormatLabel} file content, ready for immediate download and use in relevant applications (e.g., Excel or Tally for CSV).
+Do NOT include any introductory text, explanations, apologies, or any text other than the raw file content. The output must be immediately ready to be saved as a file by the user.\n\n`;
 
-    prompt += `### Specifications for the Downloadable File Content:\n\n`;
+    prompt += `### Specifications for the Downloadable ${outputFormatLabel} File Content:\n\n`;
     prompt += `- **Source Document Type (for content generation):** ${docTypeLabel}\n`;
     prompt += `- **Core Objective for File Content:** ${goalLabel}\n\n`;
 
@@ -49,25 +51,25 @@ Do NOT include any conversational text, introductions, explanations, or any text
 
     prompt += `\n### Required Output Format for the File: ${outputFormatLabel}\n`;
     // Output format specific instructions (CSV, List, Bullets)
-    if (outputFormat === 'csv') {
+    if (outputFormatId === 'csv') {
       prompt += `Provide the result in CSV (Comma Separated Values) format.
 - **Headers:** The first line MUST be a header row. The column names in the header should exactly match the "Details to Include in the File" listed above, in the same order. If no specific details were listed, use appropriate, descriptive headers based on the extracted information.
 - **Data Rows:** Each subsequent line should represent a distinct record or item.
 - **Field Order:** Maintain the order of fields in each row as listed in the "Details to Include in the File".
 - **Missing Data:** If a value for a specific detail is not found or is not applicable for a record, leave the field blank but RETAIN THE COMMA. Example: \`value1,,value3\`.
 - **Special Characters:** Ensure commas or newline characters within a data field are enclosed in double quotes (e.g., \`"field, with comma"\`). Double quotes within a field should be escaped (e.g., \`"field with ""double quotes"""\`).
-- **Example CSV Output Structure (illustrative):**
+- **Example CSV Output Structure (illustrative, headers will match "Details to Include"):**
   \`\`\`csv
   ${allDetailsFile.length > 0 ? allDetailsFile.join(',') : (firstPrimaryGoal?.suggestedDetails?.map(d=>d.label).join(',') || 'Header1,Header2,Header3')}
   ${allDetailsFile.length > 0 ? allDetailsFile.map((_, i) => `record1_value_for_detail${i + 1}`).join(',') : (firstPrimaryGoal?.suggestedDetails?.map((d,i)=>`record1_val_for_${d.label.substring(0,5)}`).join(',') || 'record1_val1,record1_val2,record1_val3')}
   \`\`\`
 `;
-    } else if (outputFormat === 'bullets') {
+    } else if (outputFormatId === 'bullets') {
       prompt += `- Present the file content as a series of bullet points.
 - Each key piece of information or extracted detail should ideally be a separate bullet.
 - Use clear and concise language.
 `;
-    } else if (outputFormat === 'list') {
+    } else if (outputFormatId === 'list') {
       prompt += `- Present the file content as a structured list of key-value pairs.
 - Clearly label each extracted piece of information. Example:
   \`\`\`
@@ -96,6 +98,7 @@ Remember: Your entire output must be the file content itself. Do not add any sur
 
   } else {
     // Standard prompt generation (not for direct file content)
+    prompt += `You are an expert AI assistant.\n`;
     prompt += `Your main task is to meticulously process information based on the specifications below for a "${docTypeLabel}" document, with the goal of "${goalLabel}".\n\n`;
 
     prompt += `### 1. Document Context & Goal\n`;
@@ -122,25 +125,25 @@ Remember: Your entire output must be the file content itself. Do not add any sur
     }
 
     prompt += `\n### 3. Output Format: ${outputFormatLabel}\n`;
-    if (outputFormat === 'csv') {
+    if (outputFormatId === 'csv') {
       prompt += `Provide the result in CSV (Comma Separated Values) format.
 - **Headers:** The first line MUST be a header row. The column names in the header should exactly match the "Details to Extract" listed above, in the same order. If no specific details were listed, use appropriate, descriptive headers based on the extracted information.
 - **Data Rows:** Each subsequent line should represent a distinct record or item.
 - **Field Order:** Maintain the order of fields in each row as listed in the "Details to Extract".
 - **Missing Data:** If a value for a specific detail is not found or is not applicable for a record, leave the field blank but RETAIN THE COMMA. Example: \`value1,,value3\`.
 - **Special Characters:** Ensure commas or newline characters within a data field are enclosed in double quotes (e.g., \`"field, with comma"\`). Double quotes within a field should be escaped (e.g., \`"field with ""double quotes"""\`).
-- **Example CSV Output Structure (illustrative):**
+- **Example CSV Output Structure (illustrative, headers will match "Details to Extract"):**
   \`\`\`csv
   ${allDetailsStandard.length > 0 ? allDetailsStandard.join(',') : (firstPrimaryGoal?.suggestedDetails?.map(d=>d.label).join(',') || 'Header1,Header2,Header3')}
   ${allDetailsStandard.length > 0 ? allDetailsStandard.map((_, i) => `record1_value_for_detail${i + 1}`).join(',') : (firstPrimaryGoal?.suggestedDetails?.map((d,i)=>`record1_val_for_${d.label.substring(0,5)}`).join(',') || 'record1_val1,record1_val2,record1_val3')}
   \`\`\`
 `;
-    } else if (outputFormat === 'bullets') {
+    } else if (outputFormatId === 'bullets') {
       prompt += `- Present information as a series of bullet points.
 - Each key piece of information or extracted detail should ideally be a separate bullet.
 - Use clear and concise language.
 `;
-    } else if (outputFormat === 'list') {
+    } else if (outputFormatId === 'list') {
       prompt += `- Present information as a structured list of key-value pairs.
 - Clearly label each extracted piece of information. Example:
   \`\`\`
@@ -176,3 +179,4 @@ Remember: Your entire output must be the file content itself. Do not add any sur
   
   return prompt;
 }
+
