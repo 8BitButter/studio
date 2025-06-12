@@ -23,11 +23,21 @@ export function generatePrompt(
   let prompt = ``;
 
   if (requestDownloadableFileContent) {
-    prompt += `You are an expert AI assistant specializing in generating downloadable file content. Your task is to create a ${outputFormatLabel} file containing key data extracted from a "${docTypeLabel}".
-The entire output must be the raw ${outputFormatId === 'csv' ? 'CSV' : outputFormatLabel} file content, ready for immediate download and use in relevant applications (e.g., Excel or Tally for CSV).
-Do NOT include any introductory text, explanations, apologies, or any text other than the raw file content. The output must be immediately ready to be saved as a file by the user.\n\n`;
+    // New, more direct intro for downloadable file content
+    prompt = `ATTENTION AI: Your primary task is to generate the complete content for a file that the user will download.
+You are an expert AI assistant. For this request, you must act as a direct file content generator.
+The user wants to extract data from a "${docTypeLabel}" and needs you to create a raw "${outputFormatLabel}" file with this data.
+This file is intended for direct use in applications like Excel or Tally (if CSV).
 
-    prompt += `### Specifications for the Downloadable ${outputFormatLabel} File Content:\n\n`;
+IMPORTANT: Your ENTIRE response must be ONLY the raw ${outputFormatLabel} content.
+- NO conversational text.
+- NO introductions or explanations.
+- NO apologies or disclaimers.
+- Your output will be saved directly as a .${outputFormatId === 'csv' ? 'csv' : (outputFormatId === 'list' || outputFormatId === 'bullets' ? 'txt' : 'txt')} file by the user.
+
+Adhere strictly to the following specifications for the file content:\n\n`;
+
+    prompt += `### Specifications for the Downloadable "${outputFormatLabel}" File Content:\n\n`;
     prompt += `- **Source Document Type (for content generation):** ${docTypeLabel}\n`;
     prompt += `- **Core Objective for File Content:** ${goalLabel}\n\n`;
 
