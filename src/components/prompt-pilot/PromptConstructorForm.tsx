@@ -75,7 +75,7 @@ export function PromptConstructorForm({
     }
   };
   
-  const currentDocType = config.documentTypes.find(dt => dt.id === formData.documentType);
+  const currentDocTypeDetails = config.documentTypes.find(dt => dt.id === formData.documentType);
   const currentPrimaryGoal = availablePrimaryGoals.find(pg => pg.id === formData.primaryGoal);
 
   return (
@@ -100,39 +100,32 @@ export function PromptConstructorForm({
             <SelectContent>
               {config.documentTypes.map(docType => (
                 <SelectItem key={docType.id} value={docType.id}>
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center space-x-2">
-                      <IconResolver name={docType.iconName} fallback={LucideIcons.FileText} className="h-4 w-4 text-muted-foreground" />
-                      <span>{docType.label}</span>
-                    </div>
-                    {docType.isUserDefined && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 p-0 ml-2 hover:bg-destructive/10"
-                        onPointerDown={(e) => {
-                          e.preventDefault(); 
-                          e.stopPropagation();
-                        }}
-                        onClick={(e) => {
-                          // Note: onClick might not fire if onPointerDown's preventDefault is too aggressive
-                          // for the button itself, but the main goal is to stop SelectItem selection.
-                          // If delete doesn't work, move deleteUserDefinedDocumentType call to onPointerDown.
-                          // For now, let's assume onClick on the button still fires.
-                          e.stopPropagation(); // Still good practice here
-                          e.preventDefault(); // Still good practice here
-                          deleteUserDefinedDocumentType(docType.id);
-                        }}
-                        aria-label={`Delete ${docType.label}`}
-                      >
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
-                    )}
+                  <div className="flex items-center space-x-2">
+                    <IconResolver name={docType.iconName} fallback={LucideIcons.FileText} className="h-4 w-4 text-muted-foreground" />
+                    <span>{docType.label}</span>
                   </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {/* Dedicated Delete Button for User-Defined Document Types */}
+          {(() => {
+            const currentSelectedDoc = config.documentTypes.find(dt => dt.id === formData.documentType);
+            if (currentSelectedDoc && currentSelectedDoc.isUserDefined && formData.documentType) {
+              return (
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteUserDefinedDocumentType(currentSelectedDoc.id)}
+                  className="mt-2 w-full sm:w-auto"
+                  aria-label={`Delete document type ${currentSelectedDoc.label}`}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete "{currentSelectedDoc.label}"
+                </Button>
+              );
+            }
+            return null;
+          })()}
         </div>
 
         {/* Step 2: Primary Goal */}
@@ -314,3 +307,4 @@ export function PromptConstructorForm({
     </Card>
   );
 }
+
