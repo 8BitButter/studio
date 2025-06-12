@@ -169,7 +169,7 @@ export default function PromptPilotPage() {
                     engineeredPrompt={generatedGmailPrompt}
                     onCopy={() => copyGmailPromptToClipboard(generatedGmailPrompt)}
                     isLoading={isLoadingGmailPrompt}
-                    // requestDownloadableFileContent={false} // Gmail prompts are for querying, not file gen
+                    requestDownloadableFileContent={false} 
                   />
                 </section>
               )}
@@ -199,3 +199,6 @@ export default function PromptPilotPage() {
     </div>
   );
 }
+
+
+    

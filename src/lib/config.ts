@@ -365,7 +365,7 @@ export const initialAppConfig: AppConfiguration = {
         { id: 'subjectKeywords', label: 'Subject Contains (Optional)', type: 'text', placeholder: 'e.g., "Monthly Report"' },
         { id: 'dateRange', label: 'Date Range', type: 'select', options: [ {value: 'last7days', label: 'Last 7 Days'}, {value: 'last30days', label: 'Last 30 Days'}, {value: 'allTime', label: 'All Time'} ], required: true, defaultValue: 'last7days' }
       ],
-      basePromptTemplate: "List all attachments from emails {{#if senderEmail}}from:{{senderEmail}}{{/if}} {{#if subjectKeywords}}with subject:\"{{subjectKeywords}}\"{{/if}} received in:{{dateRange}}. For each email, list the email subject and the names of its attachments.",
+      basePromptTemplate: "List all attachments from emails {{#if senderEmail}}from:{{senderEmail}}{{/if}} {{#if subjectKeywords}}with subject:\"{{subjectKeywords}}\"{{/if}} received in {{dateRangeDescription}}. For each email, list the email subject and the names of its attachments.",
       userGuide: "Provide either a sender email, subject keywords, or both. The more specific you are, the better the results. This prompt will ask Gemini to search your Gmail and list attachments from matching emails."
     },
     {
@@ -379,7 +379,7 @@ export const initialAppConfig: AppConfiguration = {
         { id: 'dateRange', label: 'Date Range', type: 'select', options: [ {value: 'last7days', label: 'Last 7 Days'}, {value: 'last30days', label: 'Last 30 Days'}, {value: 'allTime', label: 'All Time'} ], required: true, defaultValue: 'last7days' },
         { id: 'summaryLength', label: 'Summary Length', type: 'select', options: [ {value: 'brief', label: 'Brief'}, {value: 'detailed', label: 'Detailed'} ], required: true, defaultValue: 'brief' }
       ],
-      basePromptTemplate: "Provide a {{summaryLength}} summary of emails {{#if senderEmail}}from:{{senderEmail}}{{/if}} {{#if subjectKeywords}}with subject:\"{{subjectKeywords}}\"{{/if}} received in:{{dateRange}}.",
+      basePromptTemplate: "Provide a {{summaryLength}} summary of emails {{#if senderEmail}}from:{{senderEmail}}{{/if}} {{#if subjectKeywords}}with subject:\"{{subjectKeywords}}\"{{/if}} received in {{dateRangeDescription}}.",
       userGuide: "Specify sender, subject, or both to target emails. Choose 'brief' for a quick overview or 'detailed' for more depth."
     },
     {
@@ -392,8 +392,11 @@ export const initialAppConfig: AppConfiguration = {
             { id: 'keywords', label: 'Keywords (Optional)', type: 'text', placeholder: 'e.g., "contract" "invoice" "meeting"' },
             { id: 'dateRange', label: 'Date Range', type: 'select', options: [ {value: 'last30days', label: 'Last 30 Days'}, {value: 'last90days', label: 'Last 90 Days'}, {value: 'allTime', label: 'All Time'} ], required: true, defaultValue: 'last30days' }
         ],
-        basePromptTemplate: "List all emails exchanged with {{clientEmail}} {{#if keywords}}containing keywords:\"{{keywords}}\"{{/if}} received in:{{dateRange}}. For each email, include sender, recipient, subject, and date.",
+        basePromptTemplate: "List all emails exchanged with {{clientEmail}} {{#if keywords}}containing keywords:\"{{keywords}}\"{{/if}} received in {{dateRangeDescription}}. For each email, include sender, recipient, subject, and date.",
         userGuide: "Enter the client's email address. You can add keywords to narrow down the search (e.g., project name, specific terms)."
     }
   ],
 };
+
+
+    
