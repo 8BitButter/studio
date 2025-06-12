@@ -1,34 +1,51 @@
 
 # PromptPilot: Guided Prompt Constructor
 
-PromptPilot is a Next.js application designed to help users construct detailed and effective prompts for Large Language Models (LLMs). It features a step-by-step guided form, AI-powered prompt engineering, and the ability for users to create and save their own document type workflows.
+## About The Project
 
-## Features
+PromptPilot is an innovative Next.js application designed to empower users in crafting highly effective and detailed prompts for Large Language Models (LLMs) and specialized AI services. It simplifies the prompt engineering process through a user-friendly, tabbed interface, catering to different needs:
 
-- **Guided Prompt Construction**: Step-by-step form to select document types, goals, details, and output formats.
-- **AI-Powered Prompt Engineering**:
-    - AI refinement of user-provided custom instructions.
-    - AI engineering of the complete prompt for optimal LLM performance.
-- **Engineered Prompt Display**: Shows the final AI-optimized prompt with a one-click copy feature.
-- **New Feature Creator**: Allows users to define new document types, primary goals, and suggested details, which are saved locally.
-- **Context-Aware Suggestions**: AI suggests relevant next steps or details based on current input.
-- **Theme Switching**: Light and Dark mode support.
+*   **Document Prompts:** A guided, step-by-step form for constructing prompts aimed at extracting information from various document types.
+*   **Gmail Prompts:** A scenario-based constructor for generating prompts to query Gmail inboxes using AI models with Gmail integration (like Gemini).
+
+Whether you're looking to parse invoices, summarize bank statements, or efficiently search your emails, PromptPilot provides the tools to build the perfect prompt.
+
+## Key Features
+
+*   **Tabbed Interface for Specialized Prompt Construction:**
+    *   **Document Prompts Tab:**
+        *   Guided form: Select document types, define primary goals, choose standard extraction details, and add custom ones.
+        *   Select output formats (e.g., CSV, structured list, bullet points).
+        *   AI-powered prompt engineering: Refines custom instructions and optimizes the final prompt for LLMs.
+        *   Feature Creator: Define and save new document types, goals, and suggested details locally.
+        *   Context-Aware AI Suggestions: Get AI-driven recommendations for relevant details based on current selections.
+    *   **Gmail Prompts Tab:**
+        *   Scenario-based constructor: Choose from predefined scenarios for common Gmail tasks (e.g., extracting attachments, summarizing emails, finding client communications).
+        *   Dynamic input fields: Provide necessary details specific to the chosen Gmail scenario.
+        *   Generates specialized prompts tailored for AI models with Gmail access.
+*   **Engineered Prompt Display:** View the final AI-optimized or constructed prompt with a convenient one-click copy feature.
+*   **Customization & Extensibility:**
+    *   Locally save custom document type workflows.
+    *   (Future) Save client-specific Gmail prompt templates.
+*   **Modern UI/UX:**
+    *   Built with ShadCN UI components and Tailwind CSS.
+    *   Theme switching: Supports Light and Dark modes.
 
 ## Tech Stack
 
-- **Frontend**: Next.js (App Router), React, TypeScript
-- **UI Components**: ShadCN UI
-- **Styling**: Tailwind CSS
-- **AI Integration**: Genkit (with Google AI)
-- **State Management**: React Hooks (useState, useEffect, useContext, useReducer)
-- **Linting/Formatting**: ESLint, Prettier (implicitly, via Next.js defaults)
+*   **Frontend**: Next.js (App Router), React, TypeScript
+*   **UI Components**: ShadCN UI
+*   **Styling**: Tailwind CSS
+*   **AI Integration**: Genkit (with Google AI)
+*   **State Management**: React Hooks (useState, useEffect, useContext, useReducer)
+*   **Linting/Formatting**: ESLint, Prettier (implicitly, via Next.js defaults)
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
 
-- **Node.js**: Version 18.x or later (includes npm). You can download it from [nodejs.org](https://nodejs.org/).
-- **Git**: For cloning the repository.
+*   **Node.js**: Version 18.x or later (includes npm). You can download it from [nodejs.org](https://nodejs.org/).
+*   **Git**: For cloning the repository.
 
 ## Getting Started
 
@@ -56,9 +73,12 @@ Follow these steps to get your development environment set up:
 The application uses environment variables for configuration, particularly for AI services.
 
 1.  **Create a `.env` file**
-    Copy the example environment file to create your own local configuration:
+    Copy the example environment file to create your own local configuration (if an `.env.example` is provided; otherwise, create an empty `.env` file):
     ```bash
-    cp .env.example .env
+    # If .env.example exists:
+    # cp .env.example .env
+    # Otherwise, create an empty .env file:
+    touch .env
     ```
 
 2.  **Configure Environment Variables**
@@ -74,7 +94,7 @@ The application uses environment variables for configuration, particularly for A
 
     # Other variables if needed by your application
     ```
-    - **`GOOGLE_API_KEY`**: Your API key for Google AI services (e.g., Gemini). You can obtain this from the [Google Cloud Console](https://console.cloud.google.com/) or [Google AI Studio](https://aistudio.google.com/app/apikey).
+    *   **`GOOGLE_API_KEY`**: Your API key for Google AI services (e.g., Gemini). You can obtain this from the [Google Cloud Console](https://console.cloud.google.com/) or [Google AI Studio](https://aistudio.google.com/app/apikey).
 
     **Note**: Using Genkit with Google AI might also work with Application Default Credentials (ADC) if you are running in a Google Cloud environment or have the gcloud CLI configured. If using ADC, you might not need to explicitly set `GOOGLE_API_KEY` in the `.env` file, but it's often more straightforward for local development to use an API key.
 
@@ -90,7 +110,7 @@ PromptPilot consists of two main parts that need to be run concurrently in devel
     By default, the Next.js app will be available at [http://localhost:9002](http://localhost:9002).
 
 2.  **Start the Genkit Development Server**
-    In a separate terminal window or tab, start the Genkit server. This server handles the AI logic (flows).
+    In a separate terminal window or tab, start the Genkit server. This server handles the AI logic (flows) for features like prompt engineering and context-aware suggestions.
     ```bash
     npm run genkit:dev
     ```
@@ -117,18 +137,24 @@ For deploying Genkit flows, refer to the [Genkit documentation](https://firebase
 
 ## Scripts Overview
 
-- `npm run dev`: Starts the Next.js development server (Turbopack enabled, port 9002).
-- `npm run genkit:dev`: Starts the Genkit development server.
-- `npm run genkit:watch`: Starts the Genkit development server with file watching.
-- `npm run build`: Builds the Next.js application for production.
-- `npm run start`: Starts the Next.js production server.
-- `npm run lint`: Runs ESLint to check for code quality issues.
-- `npm run typecheck`: Runs TypeScript compiler to check for type errors.
+*   `npm run dev`: Starts the Next.js development server (Turbopack enabled, port 9002).
+*   `npm run genkit:dev`: Starts the Genkit development server.
+*   `npm run genkit:watch`: Starts the Genkit development server with file watching.
+*   `npm run build`: Builds the Next.js application for production.
+*   `npm run start`: Starts the Next.js production server.
+*   `npm run lint`: Runs ESLint to check for code quality issues.
+*   `npm run typecheck`: Runs TypeScript compiler to check for type errors.
 
 ## Contributing
 
-Details on contributing to the project (if applicable).
+Contributions are welcome! Please follow the standard GitHub flow:
+1.  Fork the repository.
+2.  Create a new branch (`git checkout -b feature/AmazingFeature`).
+3.  Make your changes.
+4.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+5.  Push to the branch (`git push origin feature/AmazingFeature`).
+6.  Open a Pull Request.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE.md) (assuming, create a LICENSE.md if needed).
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
