@@ -1,34 +1,14 @@
 
 "use client";
 import React, { useState } from 'react';
-import type { DocumentType, PrimaryGoal, DocumentField } from '@/lib/types';
+import type { DocumentType, PrimaryGoal } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { PlusCircle, Trash2, Save } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
-import IconResolver from './IconResolver';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-
-// Moved lucideIconNames generation outside the component for performance
-const lucideIconNames = Object.keys(LucideIcons)
-  .filter(key => {
-    const iconComponent = (LucideIcons as any)[key];
-    // Check if it's a valid React component (functional or forwardRef)
-    return typeof iconComponent === 'function' || 
-           (typeof iconComponent === 'object' && iconComponent !== null && typeof iconComponent.render === 'function');
-  })
-  .filter(key => key !== 'createLucideIcon' && key !== 'IconNode' && key !== 'default' && /^[A-Z]/.test(key)) // Filter out non-component exports and ensure it starts with an uppercase letter
-  .sort();
 
 interface FeatureCreatorFormProps {
   isOpen: boolean;
@@ -38,7 +18,6 @@ interface FeatureCreatorFormProps {
 
 export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFormProps) {
   const [docTypeName, setDocTypeName] = useState('');
-  const [docTypeIcon, setDocTypeIcon] = useState<string | undefined>(undefined);
   const [primaryGoals, setPrimaryGoals] = useState<Array<Partial<PrimaryGoal> & { tempId: string }>>([]);
   const { toast } = useToast();
 
@@ -63,7 +42,6 @@ export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFo
     if (!goal.suggestedDetails) {
       goal.suggestedDetails = [];
     }
-    // Ensure detail IDs are unique enough, though tempId is mostly for mapping
     goal.suggestedDetails.push({ id: `temp_detail_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, label: '' });
     setPrimaryGoals(updatedGoals);
   };
@@ -101,7 +79,7 @@ export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFo
     const newDocType: DocumentType = {
       id: docTypeName.trim().toLowerCase().replace(/\s+/g, '_') + `_${Date.now()}`, 
       label: docTypeName.trim(),
-      iconName: docTypeIcon || 'FileQuestion',
+      iconName: 'FileQuestion', // Default icon
       primaryGoals: primaryGoals.map((pg, pgIndex) => ({
         id: (pg.label!.trim().toLowerCase().replace(/\s+/g, '_') || `goal_${pgIndex}`) + `_${Date.now()}`,
         label: pg.label!.trim(),
@@ -119,7 +97,6 @@ export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFo
 
   const resetForm = () => {
     setDocTypeName('');
-    setDocTypeIcon(undefined);
     setPrimaryGoals([]);
   }
 
@@ -140,26 +117,7 @@ export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFo
             <Label htmlFor="docTypeName" className="text-right col-span-1">Name</Label>
             <Input id="docTypeName" value={docTypeName} onChange={(e) => setDocTypeName(e.target.value)} className="col-span-3" placeholder="e.g., Purchase Order" />
           </div>
-           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="docTypeIcon" className="text-right col-span-1">Icon</Label>
-            <Select value={docTypeIcon} onValueChange={setDocTypeIcon}>
-              <SelectTrigger className="col-span-3">
-                <div className="flex items-center gap-2 overflow-hidden">
-                  {docTypeIcon && <IconResolver name={docTypeIcon} className="h-4 w-4 flex-shrink-0" />}
-                  <SelectValue placeholder="Select an icon (optional)" />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                <SelectItem value="FileQuestion">(Default) FileQuestion</SelectItem>
-                {lucideIconNames.map(name => (
-                  <SelectItem key={name} value={name}>
-                    {name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+          
           <h4 className="font-medium mt-4 mb-2 text-lg">Primary Goals</h4>
           {primaryGoals.map((goal, goalIndex) => (
             <div key={goal.tempId} className="border p-4 rounded-md space-y-3 bg-card">
@@ -213,5 +171,3 @@ export function FeatureCreatorForm({ isOpen, onClose, onSave }: FeatureCreatorFo
     </Dialog>
   );
 }
-
-    
