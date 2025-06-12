@@ -314,12 +314,8 @@ export const initialAppConfig: AppConfiguration = {
     },
   ],
   outputFormats: [
-    { id: 'list', label: 'Structured List', iconName: 'ListOrdered' },
-    { id: 'csv', label: 'CSV-like (Comma Separated)', iconName: 'FileSpreadsheet' },
-    { id: 'bullets', label: 'Bulleted Points', iconName: 'List' },
-    { id: 'paragraph', label: 'Paragraph Summary', iconName: 'AlignLeft' },
-    { id: 'json', label: 'JSON', iconName: 'Braces' },
-    { id: 'markdown', label: 'Markdown', iconName: 'BookText' },
-    { id: 'html_table', label: 'HTML Table', iconName: 'Table2' },
+    { id: 'csv', label: 'CSV (for Excel/Tally Import)', iconName: 'FileSpreadsheet' },
+    { id: 'list', label: 'Structured List (Key-Value Pairs)', iconName: 'ListOrdered' },
+    { id: 'bullets', label: 'Bulleted Summary', iconName: 'List' },
   ],
 };

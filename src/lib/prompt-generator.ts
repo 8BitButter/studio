@@ -59,11 +59,12 @@ Based on the Primary Goal, focus on extracting the following details:
   prompt += `\n### 3. Output Format: ${outputFormatLabel}\n`;
 
   if (outputFormat === 'csv') {
-    prompt += `Provide the result in CSV (Comma Separated Values) format.
-- **Headers:** The first line MUST be a header row. The column names in the header should exactly match the "Details to Extract" listed above, in the same order. If no specific details were listed, use appropriate headers based on the extracted information.
+    prompt += `Provide the result in CSV (Comma Separated Values) format. This format is suitable for import into spreadsheet software like Excel or accounting software like Tally.
+- **Headers:** The first line MUST be a header row. The column names in the header should exactly match the "Details to Extract" listed above, in the same order. If no specific details were listed, use appropriate, descriptive headers based on the extracted information.
 - **Data Rows:** Each subsequent line should represent a distinct record or item found in the document.
 - **Field Order:** Maintain the order of fields in each row as listed in the "Details to Extract".
-- **Missing Data:** If a value for a specific detail is not found or is not applicable for a record, leave the field blank but RETAIN THE COMMA to ensure correct column alignment.
+- **Missing Data:** If a value for a specific detail is not found or is not applicable for a record, leave the field blank but RETAIN THE COMMA to ensure correct column alignment. For example, \`value1,,value3\` if the second value is missing.
+- **Special Characters:** Ensure that any commas or newline characters within a data field are properly handled for CSV format (e.g., by enclosing the field in double quotes: \`"field, with comma"\`). Double quotes within a field should be escaped (e.g., \`"field with ""double quotes"""\`).
 - **Example CSV Output Structure (illustrative, actual headers will depend on your "Details to Extract"):**
   \`\`\`csv
   ${allDetails.length > 0 ? allDetails.join(',') : (firstPrimaryGoal?.suggestedDetails?.map(d=>d.label).join(',') || 'Header1,Header2,Header3')}
@@ -71,107 +72,29 @@ Based on the Primary Goal, focus on extracting the following details:
   ${allDetails.length > 0 ? allDetails.map((_, i) => i === 1 ? '' : `record2_value_for_detail${i + 1}`).join(',') : (firstPrimaryGoal?.suggestedDetails?.map((d,i)=> i === 1 ? '' : `record2_val_for_${d.label.substring(0,5)}`).join(',') || 'record2_val1,,record2_val3')}
   \`\`\`
 `;
-  } else if (outputFormat === 'json') {
-    const keysForExample = allDetails.length > 0 ? allDetails : (firstPrimaryGoal?.suggestedDetails?.map(d => d.label) || ['field_1', 'field_2', 'field_3']);
-    const exampleRecord: { [key: string]: any } = {};
-    keysForExample.forEach((detail, index) => {
-        const key = toSnakeCase(detail);
-        if (detail.toLowerCase().includes('amount') || detail.toLowerCase().includes('price') || detail.toLowerCase().includes('quantity') || detail.toLowerCase().includes('number')) {
-            exampleRecord[key] = index === 1 && keysForExample.length > 1 ? null : 123.45;
-        } else if (detail.toLowerCase().includes('date')) {
-            exampleRecord[key] = index === 1 && keysForExample.length > 1 ? null : "YYYY-MM-DD";
-        }
-        else {
-            exampleRecord[key] = index === 1 && keysForExample.length > 1 ? "" : `value_for_${key}`;
-        }
-    });
-     const exampleJson = {
-      [`extracted_${toSnakeCase(docTypeLabel || "items").replace(/s$/, "")}s`]: [
-        exampleRecord,
-        ...(keysForExample.length > 1 ? [{ ...exampleRecord, [toSnakeCase(keysForExample[0])]: `another_value_for_${toSnakeCase(keysForExample[0])}`, [toSnakeCase(keysForExample[1])]: keysForExample[1].toLowerCase().includes('amount') ? 678.90 : (keysForExample[1].toLowerCase().includes('date') ? "YYYY-MM-DD" : "") }] : [])
-      ]
-    };
-
-    prompt += `Return the extracted results as a single JSON object.
-- **Structure:** The JSON object should have a primary key (e.g., "extracted_records", or a key relevant to the document type like "${toSnakeCase(docTypeLabel || "items").replace(/s$/, "")}s"). The value of this key MUST be an array of JSON objects.
-- **Array Elements:** Each JSON object within the array represents a distinct record or item found.
-- **Object Keys:** Keys within each item object should be the snake_case version of the "Details to Extract" labels (e.g., "Invoice Number" becomes "invoice_number"). If no specific details were listed, use logical snake_case keys for the data you extract based on the document.
-- **Missing/Empty Data:**
-    - For missing textual data, use an empty string (\`""\`).
-    - For missing numerical or date data where applicable, use \`null\`. If unsure, default to \`""\`.
-- **Data Types:** Use appropriate JSON data types (string, number, boolean, array, object). Numbers should be actual numbers, not strings.
-- **Always an Array:** The primary value (e.g., under "${toSnakeCase(docTypeLabel || "items").replace(/s$/, "")}s") must always be an array, even if only one item is found (array with one object) or no items are found (empty array \`[]\`).
-- **Example JSON Output Structure (illustrative, actual keys and root key will depend on your "Details to Extract" and Document Type):**
-  \`\`\`json
-  ${JSON.stringify(exampleJson, null, 2)}
-  \`\`\`
-`;
   } else if (outputFormat === 'bullets') {
     prompt += `- Present information as a series of bullet points.
 - Each key piece of information or extracted detail should ideally be a separate bullet or a clearly delineated part of a bullet point.
+- Use clear and concise language.
 `;
   } else if (outputFormat === 'list') {
     prompt += `- Present information as a structured list.
-- Clearly label each extracted piece of information.
-`;
-  } else if (outputFormat === 'paragraph') {
-    prompt += `- Summarize the extracted information in a concise paragraph or series of paragraphs.
-- Ensure the summary flows well and incorporates the key details requested.
-`;
-  } else if (outputFormat === 'markdown') {
-    prompt += `- Present the extracted data as well-formatted Markdown.
-- Use appropriate Markdown elements such as headings (#, ##), lists (-, *), tables (if multiple records with consistent fields are extracted), and bold text (**label**) for clarity.
-- For single record extraction, a list of bolded labels followed by their values is suitable.
-- **Example Markdown for a single record (illustrative):**
-  \`\`\`markdown
-  **Invoice Number:** INV-2023-001
-  **Vendor Name:** ACME Corp
-  **Total Amount:** 150.75
+- Clearly label each extracted piece of information (Key-Value Pair style). For example:
   \`\`\`
-- **Example Markdown Table for multiple records (illustrative):**
-  \`\`\`markdown
-  | Item Description | Quantity | Unit Price |
-  |------------------|----------|------------|
-  | Widget A         | 2        | 10.00      |
-  | Gadget B         | 1        | 25.50      |
+  Invoice Number: INV-123
+  Vendor Name: Acme Corp
+  Total Amount: 100.00
   \`\`\`
-`;
-  } else if (outputFormat === 'html_table') {
-    prompt += `- Generate a complete HTML table containing the extracted data.
-- The table should include \`<table>\`, \`<thead>\`, \`<tbody>\`, \`<tr>\`, \`<th>\` (for headers), and \`<td>\` (for data cells) tags.
-- Headers in the \`<thead>\` section should correspond to the "Details to Extract" or logical headers if none were specified.
-- Each record or item found in the document should be a separate \`<tr>\` in the \`<tbody>\`.
-- Ensure proper HTML escaping for any special characters within the data to prevent broken HTML.
-- **Example HTML Table Output Structure (illustrative):**
-  \`\`\`html
-  <table>
-    <thead>
-      <tr>
-        <th>Detail 1</th>
-        <th>Detail 2</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Record1 Value1</td>
-        <td>Record1 Value2</td>
-      </tr>
-      <tr>
-        <td>Record2 Value1</td>
-        <td>Record2 Value2</td>
-      </tr>
-    </tbody>
-  </table>
-  \`\`\`
+- If multiple records are found, clearly separate them (e.g., with a blank line or a sub-heading for each record).
 `;
   }
 
 
   prompt += `\n### 4. Formatting Rules & Handling Data
 - **Dates:** If extracting dates, format them as YYYY-MM-DD unless explicitly stated otherwise in the "Custom Instructions".
-- **Amounts/Numbers:** If extracting monetary values or numerical data, provide them as raw numbers (e.g., 1234.50 or 1234). Do not include currency symbols (like $, €) or thousands separators (like commas in 1,234) unless required by "Custom Instructions".
-- **Text Cleanup:** Strip any leading/trailing unnecessary whitespace from extracted text values. Ensure newlines within a field value are handled appropriately for the chosen output format (e.g., typically escaped or removed for CSV/JSON single line records, but might be preserved in paragraph or bulleted list outputs).
-- **Multiple Records:** If the document appears to contain multiple distinct records or items relevant to the Primary Goal (e.g., multiple line items in an invoice, multiple transactions in a statement), ensure each is processed and represented separately according to the Output Format chosen (e.g., a new row in CSV, a new object in the JSON array, a new row in an HTML/Markdown table).
+- **Amounts/Numbers:** If extracting monetary values or numerical data, provide them as raw numbers (e.g., 1234.50 or 1234). Do not include currency symbols (like $, €) or thousands separators (like commas in 1,234) unless required by "Custom Instructions" or the output format explicitly (e.g. for human readable lists, currency symbols might be ok if specified in custom instructions, but for CSV, raw numbers are usually better).
+- **Text Cleanup:** Strip any leading/trailing unnecessary whitespace from extracted text values. Ensure newlines within a field value are handled appropriately for the chosen output format (e.g., typically escaped or removed for CSV single line records, but might be preserved in bulleted list outputs).
+- **Multiple Records:** If the document appears to contain multiple distinct records or items relevant to the Primary Goal (e.g., multiple line items in an invoice, multiple transactions in a statement), ensure each is processed and represented separately according to the Output Format chosen (e.g., a new row in CSV, a new distinct section in a list).
 
 `;
 
