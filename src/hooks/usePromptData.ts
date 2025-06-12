@@ -45,7 +45,7 @@ export function usePromptData() {
             documentTypes: [
               ...initialAppConfig.documentTypes,
               ...userDefinedDocumentTypes.map(dt => ({ ...dt, isUserDefined: true }))
-            ],
+            ].filter((dt, index, self) => index === self.findIndex(t => t.id === dt.id || t.label === dt.label)), // Deduplicate
           }));
         }
       }
@@ -66,10 +66,6 @@ export function usePromptData() {
       if (selectedDoc && (!formData.primaryGoal || !selectedDoc.primaryGoals.find(pg => pg.id === formData.primaryGoal))) {
          updateFormData('primaryGoal', ''); 
       }
-      // Do not reset selectedDetails and customDetails here if we want them to persist across doc type changes
-      // or be more selective about when they are reset.
-      // updateFormData('selectedDetails', []); // Consider if this is always desired
-      // updateFormData('customDetails', []);  // Consider if this is always desired
     } else {
       setAvailablePrimaryGoals([]);
       updateFormData('primaryGoal', '');
@@ -81,9 +77,6 @@ export function usePromptData() {
       const selectedDoc = appConfig.documentTypes.find(dt => dt.id === formData.documentType);
       const selectedGoal = selectedDoc?.primaryGoals.find(pg => pg.id === formData.primaryGoal);
       setAvailableDetails(selectedGoal?.suggestedDetails || []);
-      // When primary goal changes, it's often good to clear existing selected details
-      // that might not be relevant to the new goal.
-      // updateFormData('selectedDetails', []); // Consider if this is desired
     } else {
       setAvailableDetails([]);
     }
@@ -98,11 +91,14 @@ export function usePromptData() {
       const docTypeLabel = appConfig.documentTypes.find(dt => dt.id === formData.documentType)?.label || formData.documentType;
       const goalLabel = availablePrimaryGoals.find(g => g.id === formData.primaryGoal)?.label;
       
+      const currentSelectedDetails = formData.selectedDetails || [];
+      const currentCustomDetails = formData.customDetails || [];
+
       fetchAiSuggestions({
         documentType: docTypeLabel,
         primaryGoal: goalLabel,
-        selectedDetails: formData.selectedDetails, // Use the actual array for the API call
-        customDetails: formData.customDetails,   // Use the actual array for the API call
+        selectedDetails: currentSelectedDetails, 
+        selectedCustomDetails: currentCustomDetails,
       })
         .then(response => setAiSuggestions(response.suggestedOptions || []))
         .catch(error => {
@@ -117,11 +113,13 @@ export function usePromptData() {
   }, [
       formData.documentType,
       formData.primaryGoal,
-      serializedSelectedDetails, // Use serialized version for dependency
-      serializedCustomDetails,  // Use serialized version for dependency
+      serializedSelectedDetails, 
+      serializedCustomDetails,  
       appConfig.documentTypes, 
       availablePrimaryGoals, 
-      toast
+      toast,
+      formData.selectedDetails, // Direct dependencies for fetchAiSuggestions
+      formData.customDetails   // Direct dependencies for fetchAiSuggestions
     ]);
 
 
@@ -227,20 +225,49 @@ export function usePromptData() {
   };
 
   const addNewDocumentType = (newDocType: DocumentType) => {
-    const updatedDocTypes = [...appConfig.documentTypes, { ...newDocType, isUserDefined: true }];
+    const updatedDocTypes = [...appConfig.documentTypes.filter(dt => !dt.isUserDefined || dt.id !== newDocType.id), { ...newDocType, isUserDefined: true }];
+    const uniqueDocTypes = updatedDocTypes.filter((dt, index, self) => index === self.findIndex(t => t.id === dt.id || t.label === dt.label));
+
     setAppConfig(prevConfig => ({
       ...prevConfig,
-      documentTypes: updatedDocTypes,
+      documentTypes: uniqueDocTypes,
     }));
-    const userDefinedTypes = updatedDocTypes.filter(dt => dt.isUserDefined);
+    const userDefinedTypes = uniqueDocTypes.filter(dt => dt.isUserDefined);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userDefinedTypes));
-      toast({ title: "Feature Saved", description: `New document type "${newDocType.label}" has been added.` });
+      toast({ title: "Feature Saved", description: `New document type "${newDocType.label}" has been added/updated.` });
     } catch (error) {
       console.error("Failed to save to localStorage:", error);
       toast({ title: "Save Error", description: "Could not save the new document type.", variant: "destructive" });
     }
   };
+
+  const deleteUserDefinedDocumentType = useCallback((docTypeIdToDelete: string) => {
+    const docTypeToDelete = appConfig.documentTypes.find(dt => dt.id === docTypeIdToDelete);
+    if (!docTypeToDelete || !docTypeToDelete.isUserDefined) {
+      toast({ title: "Deletion Error", description: "Cannot delete pre-defined document types or type not found.", variant: "destructive" });
+      return;
+    }
+
+    const newDocumentTypes = appConfig.documentTypes.filter(dt => dt.id !== docTypeIdToDelete);
+    setAppConfig(prev => ({ ...prev, documentTypes: newDocumentTypes }));
+
+    const userDefinedTypes = newDocumentTypes.filter(dt => dt.isUserDefined);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userDefinedTypes));
+      toast({ title: "Document Type Deleted", description: `"${docTypeToDelete.label}" has been removed.` });
+    } catch (error) {
+      console.error("Failed to update localStorage after deletion:", error);
+      toast({ title: "Storage Error", description: "Could not update stored document types after deletion.", variant: "destructive" });
+    }
+
+    if (formData.documentType === docTypeIdToDelete) {
+      updateFormData('documentType', '');
+      updateFormData('primaryGoal', '');
+      updateFormData('selectedDetails', []);
+      updateFormData('customDetails', []);
+    }
+  }, [appConfig.documentTypes, formData.documentType, toast, updateFormData]);
 
   return {
     appConfig,
@@ -261,5 +288,7 @@ export function usePromptData() {
     resetForm,
     copyToClipboard,
     addNewDocumentType,
+    deleteUserDefinedDocumentType,
   };
 }
+

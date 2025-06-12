@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState } from 'react';
 import type { AppConfiguration, PromptFormData, PrimaryGoal, DocumentField } from '@/lib/types';
@@ -12,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import IconResolver from './IconResolver';
 import { Lightbulb, Loader2, PlusCircle, Trash2, Info, RotateCcw } from 'lucide-react';
-import * as LucideIcons from 'lucide-react'; // Import all for fallback resolution
+import * as LucideIcons from 'lucide-react'; 
 import {
   Tooltip,
   TooltipContent,
@@ -34,6 +35,7 @@ interface PromptConstructorFormProps {
   addAiSuggestionToDetails: (suggestion: string) => void;
   onReset: () => void;
   onFeatureCreatorOpen: () => void;
+  deleteUserDefinedDocumentType: (docTypeId: string) => void; 
 }
 
 const SectionTooltip: React.FC<{text: string, children: React.ReactNode}> = ({ text, children }) => (
@@ -62,6 +64,7 @@ export function PromptConstructorForm({
   addAiSuggestionToDetails,
   onReset,
   onFeatureCreatorOpen,
+  deleteUserDefinedDocumentType,
 }: PromptConstructorFormProps) {
   const [customDetailInput, setCustomDetailInput] = useState('');
 
@@ -97,9 +100,26 @@ export function PromptConstructorForm({
             <SelectContent>
               {config.documentTypes.map(docType => (
                 <SelectItem key={docType.id} value={docType.id}>
-                  <div className="flex items-center space-x-2">
-                    <IconResolver name={docType.iconName} fallback={LucideIcons.FileText} className="h-4 w-4 text-muted-foreground" />
-                    <span>{docType.label}</span>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center space-x-2">
+                      <IconResolver name={docType.iconName} fallback={LucideIcons.FileText} className="h-4 w-4 text-muted-foreground" />
+                      <span>{docType.label}</span>
+                    </div>
+                    {docType.isUserDefined && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 p-0 ml-2 hover:bg-destructive/10 data-[state=selected]:hover:bg-destructive/20"
+                        onClick={(e) => {
+                          e.stopPropagation(); 
+                          e.preventDefault(); 
+                          deleteUserDefinedDocumentType(docType.id);
+                        }}
+                        aria-label={`Delete ${docType.label}`}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </SelectItem>
               ))}
@@ -286,3 +306,4 @@ export function PromptConstructorForm({
     </Card>
   );
 }
+

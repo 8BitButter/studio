@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState } from 'react';
 import { Header } from '@/components/prompt-pilot/Header';
@@ -26,6 +27,7 @@ export default function PromptPilotPage() {
     resetForm,
     copyToClipboard,
     addNewDocumentType,
+    deleteUserDefinedDocumentType, // Added this
     triggerPromptEngineeringProcess,
     isLoadingRefinement,
     isLoadingEngineering,
@@ -37,7 +39,7 @@ export default function PromptPilotPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header appName="PromptPilot" />
       <main className="flex-grow container mx-auto p-6 md:p-8 lg:p-10">
-        <div className="flex flex-col gap-8 lg:gap-12 items-stretch"> {/* Changed to single column, items-stretch */}
+        <div className="flex flex-col gap-8 lg:gap-12 items-stretch">
           <section id="prompt-constructor" className="space-y-8">
             <PromptConstructorForm
               config={appConfig}
@@ -53,6 +55,7 @@ export default function PromptPilotPage() {
               addAiSuggestionToDetails={addAiSuggestionToDetails}
               onReset={resetForm}
               onFeatureCreatorOpen={() => setFeatureCreatorOpen(true)}
+              deleteUserDefinedDocumentType={deleteUserDefinedDocumentType} // Passed this down
             />
             <Alert variant="default" className="bg-accent/10 border-accent/30 text-accent-foreground">
               <AlertCircle className="h-4 w-4 text-accent" />
@@ -96,3 +99,4 @@ export default function PromptPilotPage() {
     </div>
   );
 }
+
