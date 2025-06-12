@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import IconResolver from './IconResolver';
-import { Lightbulb, Loader2, PlusCircle, Trash2, Info, RotateCcw, FileDown } from 'lucide-react';
+import { Lightbulb, Loader2, PlusCircle, Trash2, Info, RotateCcw } from 'lucide-react'; // FileDown removed
 import * as LucideIcons from 'lucide-react'; 
 import {
   Tooltip,
@@ -272,33 +272,20 @@ export function PromptConstructorForm({
               ))}
             </SelectContent>
           </Select>
-          <div className="flex items-center space-x-2 pt-2">
-            <Checkbox
-              id="requestDownloadableFileContent"
-              checked={formData.requestDownloadableFileContent}
-              onCheckedChange={(checked) => updateFormData('requestDownloadableFileContent', checked)}
-            />
-            <Label htmlFor="requestDownloadableFileContent" className="font-normal cursor-pointer flex items-center">
-              <FileDown className="mr-2 h-4 w-4 text-primary" />
-              Generate downloadable file content directly
-            </Label>
-             <SectionTooltip text="If checked, the LLM will provide its entire response as the content for a downloadable file, based on the selected output format. The prompt will be engineered to request this.">
-                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-            </SectionTooltip>
-          </div>
+          {/* Removed Checkbox for requestDownloadableFileContent */}
         </div>
 
         {/* Step 4: Custom Instructions */}
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
             <Label htmlFor="customInstructions" className="text-base font-medium">Step 4: Add Custom Instructions (Optional)</Label>
-            <SectionTooltip text="Provide any specific guidelines, exclusions, or clarifications for the LLM. If 'Generate downloadable file content' is checked, ensure all context for file generation is included here or implied by other selections.">
+            <SectionTooltip text="Provide any specific guidelines, exclusions, or clarifications for the LLM.">
                 <Info className="h-4 w-4 text-muted-foreground cursor-help" />
             </SectionTooltip>
           </div>
           <Textarea
             id="customInstructions"
-            placeholder="e.g., Exclude tax details. If generating file content, ensure all necessary information for the LLM to create the file is provided here or through other form selections..."
+            placeholder="e.g., Exclude tax details. Focus on line items only..."
             value={formData.customInstructions}
             onChange={(e) => updateFormData('customInstructions', e.target.value)}
             rows={4}

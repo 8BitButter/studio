@@ -1,13 +1,12 @@
 
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { AppConfiguration, DocumentType, PromptFormData } from '@/lib/types'; // ExecutePromptInput removed
+import type { AppConfiguration, DocumentType, PromptFormData, DocumentField } from '@/lib/types';
 import { initialAppConfig } from '@/lib/config';
 import { generatePrompt } from '@/lib/prompt-generator';
 import { suggestNextOptions as fetchAiSuggestions } from '@/ai/flows/context-aware-prompting';
 import { refineCustomInstructionsFlow } from '@/ai/flows/refine-custom-instructions-flow';
 import { engineerFinalPromptFlow } from '@/ai/flows/engineer-final-prompt-flow';
-// executePromptFlow import removed
 import { useToast } from '@/hooks/use-toast';
 
 const LOCAL_STORAGE_KEY = 'promptPilotUserConfig';
@@ -18,7 +17,7 @@ const defaultFormData: Omit<PromptFormData, 'primaryGoal'> & { primaryGoal?: str
   customDetails: [],
   outputFormat: '',
   customInstructions: '',
-  requestDownloadableFileContent: false,
+  // requestDownloadableFileContent: false, // Removed
 };
 
 export function usePromptData() {
@@ -28,10 +27,6 @@ export function usePromptData() {
   const [aiEngineeredPrompt, setAiEngineeredPrompt] = useState<string>('');
   const [isLoadingRefinement, setIsLoadingRefinement] = useState<boolean>(false);
   const [isLoadingEngineering, setIsLoadingEngineering] = useState<boolean>(false);
-
-  // Removed llmResponseText and isLoadingLlmResponse states
-  // const [llmResponseText, setLlmResponseText] = useState<string>(''); 
-  // const [isLoadingLlmResponse, setIsLoadingLlmResponse] = useState<boolean>(false); 
 
   const [availableDetails, setAvailableDetails] = useState<DocumentField[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
@@ -112,9 +107,6 @@ export function usePromptData() {
       formData.customDetails   
     ]);
 
-  // executeEngineeredPromptForFileContent (and thus triggerLlmExecution) removed from frontend execution path.
-  // The app will now only engineer the prompt.
-
   const triggerPromptEngineeringProcess = useCallback(async () => {
     if (!formData.documentType || !formData.outputFormat) {
       toast({
@@ -128,7 +120,6 @@ export function usePromptData() {
     setIsLoadingRefinement(true);
     setIsLoadingEngineering(true);
     setAiEngineeredPrompt(''); 
-    // setLlmResponseText(''); // Removed
 
     let instructionsForBasePrompt = formData.customInstructions;
 
@@ -145,16 +136,16 @@ export function usePromptData() {
       setIsLoadingRefinement(false);
     }
     
+    // Pass the complete formData object to generatePrompt
     const basePrompt = generatePrompt(formData, appConfig, instructionsForBasePrompt);
 
     try {
       const finalEngineeredResult = await engineerFinalPromptFlow({ rawPrompt: basePrompt });
       setAiEngineeredPrompt(finalEngineeredResult.engineeredPrompt);
       toast({ title: "Prompt Engineered!", description: "AI has generated an optimized prompt." });
-      // Removed automatic call to executeEngineeredPromptForFileContent
     } catch (error) {
       console.error("Error engineering final prompt:", error);
-      toast({ title: "Engineering Error", description: "Could not engineer the final prompt.", variant: "destructive" });
+      toast({ title: "EngineeringError", description: "Could not engineer the final prompt.", variant: "destructive" });
       setAiEngineeredPrompt("Error generating engineered prompt. Please try again.");
     } finally {
       setIsLoadingEngineering(false);
@@ -201,14 +192,12 @@ export function usePromptData() {
     setFormData(defaultFormData as Omit<PromptFormData, 'primaryGoal'>);
     setAiSuggestions([]);
     setAiEngineeredPrompt('');
-    // setLlmResponseText(''); // Removed
     setIsLoadingRefinement(false);
     setIsLoadingEngineering(false);
-    // setIsLoadingLlmResponse(false); // Removed
     toast({ title: "Form Reset", description: "All selections have been cleared." });
   };
 
-  const copyToClipboard = (textToCopy: string) => { // Type 'Response' removed
+  const copyToClipboard = (textToCopy: string) => { 
     if (!textToCopy) {
       toast({ title: "Nothing to Copy", description: `Please generate a prompt first.`, variant: "default" });
       return;
@@ -284,8 +273,5 @@ export function usePromptData() {
     copyToClipboard,
     addNewDocumentType,
     deleteUserDefinedDocumentType,
-    // llmResponseText, // Removed from return
-    // isLoadingLlmResponse, // Removed from return
-    // triggerLlmExecution, // Removed from return
   };
 }

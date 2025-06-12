@@ -37,16 +37,14 @@ export interface PromptFormData {
   customDetails: string[]; // For user-added text input details
   outputFormat: string;
   customInstructions: string;
-  requestDownloadableFileContent: boolean; // New field
+  // requestDownloadableFileContent: boolean; // Removed field
 }
 
 // For the new execute prompt flow
 export interface ExecutePromptInput {
   engineeredPrompt: string;
-  // documentText: string; // Removed
 }
 
 export interface ExecutePromptOutput {
   llmResponseText: string;
 }
-
