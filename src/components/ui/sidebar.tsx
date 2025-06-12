@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -32,7 +33,7 @@ type SidebarContext = {
   setOpen: (open: boolean) => void
   openMobile: boolean
   setOpenMobile: (open: boolean) => void
-  isMobile: boolean
+  isMobile: boolean | undefined; // Allow undefined during initial hydration
   toggleSidebar: () => void
 }
 
@@ -91,10 +92,16 @@ const SidebarProvider = React.forwardRef<
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
-      return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open)
+      // Check if isMobile is determined before using it
+      if (isMobile) {
+        setOpenMobile((currentOpenMobile) => !currentOpenMobile);
+      } else if (isMobile === false) { // Explicitly check for false for desktop
+        setOpen((currentOpen) => !currentOpen);
+      }
+      // If isMobile is undefined, this function effectively does nothing,
+      // which is fine as UI depending on it will be deferred.
     }, [isMobile, setOpen, setOpenMobile])
+
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
@@ -177,6 +184,11 @@ const Sidebar = React.forwardRef<
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
+    // Defer rendering based on isMobile until it's determined client-side to prevent hydration mismatch
+    if (isMobile === undefined) {
+      return null; // Or a placeholder/skeleton if preferred
+    }
+
     if (collapsible === "none") {
       return (
         <div
@@ -212,6 +224,7 @@ const Sidebar = React.forwardRef<
       )
     }
 
+    // Desktop rendering
     return (
       <div
         ref={ref}
@@ -577,13 +590,16 @@ const SidebarMenuButton = React.forwardRef<
       }
     }
 
+    // Ensure isMobile is defined before using it for conditional logic
+    const hideTooltip = state !== "collapsed" || isMobile === undefined || isMobile;
+
     return (
       <Tooltip>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent
           side="right"
           align="center"
-          hidden={state !== "collapsed" || isMobile}
+          hidden={hideTooltip}
           {...tooltip}
         />
       </Tooltip>
@@ -761,3 +777,5 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
+    
